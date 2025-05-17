@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    groups:
+      workflow:
+        patterns:
+          - "*"
+    assignees:
+      - "krymtkts"
+  # Maintain dependencies for NuGet
+  - package-ecosystem: "nuget"
+    # NOTE: dependabot raises dependency_file_not_found error with root directory.
+    # NOTE: directories can use glob patterns.
+    directories:
+      - "/src/*"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    groups:
+      pwsh-std:
+        patterns:
+          - "PowerShellStandard.Library"
+        update-types:
+          - "patch"
+    ignore:
+      - dependency-name: "PowerShellStandard.Library"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    assignees:
+      - "krymtkts"
