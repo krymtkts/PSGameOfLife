@@ -2,7 +2,22 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>PSGameOfLife</RootNamespace>
+    <!-- <Version>0.1.0</Version> -->
+    <!-- <Description></Description> -->
+    <Copyright>Copyright © 2025 Takatoshi Kuriyama. All rights reserved.</Copyright>
+    <Nullable>enable</Nullable>
+    <!-- Disable xml generation. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Disable deps.json generation -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <!-- Deploy the produced assembly -->
+    <PublishDir>..\..\publish\PSGameOfLife</PublishDir>
+    <!-- Disable satellite assemblies generation -->
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <!-- Set warning level to 4 and treat warnings as errors -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>
