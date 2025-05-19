@@ -400,3 +400,6 @@ FodyWeavers.xsd
 
 # FSharp.Analyzers.SDK SARIF report
 *.sarif
+
+# Publish output (not tracked)
+publish/
