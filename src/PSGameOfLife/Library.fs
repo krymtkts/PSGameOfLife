@@ -1,5 +1,11 @@
 ﻿namespace PSGameOfLife
 
-module Say =
-    let hello name =
-        printfn "Hello %s" name
+open System.Management.Automation
+
+[<Cmdlet(VerbsLifecycle.Start, "GameOfLife")>]
+type StartGameOfLifeCommand() =
+    inherit Cmdlet()
+
+    override __.BeginProcessing() = ()
+    override __.ProcessRecord() = ()
+    override __.EndProcessing() = ()
