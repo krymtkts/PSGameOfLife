@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/PSGameOfLife.Test/PSGameOfLife.Test.fsproj" />
     <Project Path="src/PSGameOfLife/PSGameOfLife.fsproj" />
   </Folder>
 </Solution>
