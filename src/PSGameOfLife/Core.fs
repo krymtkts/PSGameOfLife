@@ -9,6 +9,8 @@ type Cell =
 type Board =
     { Width: int
       Height: int
+      Lives: int
+      Generation: int
       Cells: Cell[,] }
 
 let neighborOffsets =
@@ -33,6 +35,9 @@ let nextCellState (cell: Cell) (lives: int) =
     | Birth -> Live
     | _ -> Dead
 
+let countLiveCells (cells: Cell[,]) =
+    cells |> Seq.cast<Cell> |> Seq.sumBy (fun cell -> if cell.IsLive then 1 else 0)
+
 let nextGeneration (board: Board) =
     let nextGeneration =
         fun x y cell ->
@@ -40,5 +45,18 @@ let nextGeneration (board: Board) =
             |> countLiveNeighbors board.Cells
             |> nextCellState cell
 
+    let cells = board.Cells |> Array2D.mapi nextGeneration
+
     { board with
-        Cells = board.Cells |> Array2D.mapi nextGeneration }
+        Generation = board.Generation + 1
+        Lives = cells |> countLiveCells
+        Cells = cells }
+
+let createBoard initializer width height =
+    let cells = Array2D.init height width initializer
+
+    { Width = width
+      Height = height
+      Lives = cells |> countLiveCells
+      Generation = 0
+      Cells = cells }

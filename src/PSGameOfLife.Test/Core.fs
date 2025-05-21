@@ -16,6 +16,8 @@ let testsCore =
               let board =
                   { Width = 1
                     Height = 1
+                    Lives = 0
+                    Generation = 0
                     Cells = array2D [| [| Dead |] |] }
 
               board
@@ -23,6 +25,7 @@ let testsCore =
               |> Expect.equal
                   "should stay dead"
                   { board with
+                      Generation = 1
                       Cells = array2D [| [| Dead |] |] }
           }
 
@@ -30,6 +33,8 @@ let testsCore =
               let board =
                   { Width = 1
                     Height = 1
+                    Lives = 1
+                    Generation = 0
                     Cells = array2D [| [| Live |] |] }
 
               board
@@ -37,6 +42,8 @@ let testsCore =
               |> Expect.equal
                   "should die"
                   { board with
+                      Lives = 0
+                      Generation = 1
                       Cells = array2D [| [| Dead |] |] }
           }
 
@@ -44,6 +51,8 @@ let testsCore =
               let board =
                   { Width = 2
                     Height = 2
+                    Lives = 3
+                    Generation = 0
                     Cells =
                       array2D
                           [|
@@ -58,6 +67,8 @@ let testsCore =
               |> Expect.equal
                   "should become Block"
                   { board with
+                      Lives = 4
+                      Generation = 1
                       Cells =
                           array2D
                               [|
@@ -72,6 +83,8 @@ let testsCore =
               let board =
                   { Width = 2
                     Height = 2
+                    Lives = 4
+                    Generation = 0
                     Cells =
                       array2D
                           [|
@@ -86,6 +99,7 @@ let testsCore =
               |> Expect.equal
                   "should stay alive"
                   { board with
+                      Generation = 1
                       Cells =
                           array2D
                               [|
@@ -101,6 +115,8 @@ let testsCore =
               let board =
                   { Width = 3
                     Height = 3
+                    Lives = 3
+                    Generation = 0
                     Cells =
                       array2D
                           [|
@@ -116,6 +132,7 @@ let testsCore =
               |> Expect.equal
                   "should become a horizontal line"
                   { board with
+                      Generation = 1
                       Cells =
                           array2D
                               [|
