@@ -27,7 +27,7 @@ let countLiveNeighbors (cells: Cell[,]) (neighborsRange: (int * int) array) =
 let inline (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
 let inline (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
 
-let isCellAlive (cell: Cell) (lives: int) =
+let nextCellState (cell: Cell) (lives: int) =
     match cell, lives with
     | Survive
     | Birth -> Live
@@ -38,7 +38,7 @@ let nextGeneration (board: Board) =
         fun x y cell ->
             getNeighborsRange board.Width board.Height x y
             |> countLiveNeighbors board.Cells
-            |> isCellAlive cell
+            |> nextCellState cell
 
     { board with
         Cells = board.Cells |> Array2D.mapi nextGeneration }
