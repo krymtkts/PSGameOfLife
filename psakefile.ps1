@@ -14,7 +14,7 @@ Properties {
 }
 
 Task default -Depends TestAll
-Task TestAll -Depends Init, Build, UnitTest, Coverage, Lint
+Task TestAll -Depends Init, Build, UnitTest, Coverage, Lint, Import
 
 Task Init {
     'Init is running!'
