@@ -24,7 +24,7 @@ let getNeighborsRange (width: int) (height: int) (x: int) (y: int) =
 
 let countLiveNeighbors (cells: Cell[,]) (neighborsRange: (int * int) array) =
     neighborsRange
-    |> Array.sumBy (fun (x, y) -> if cells.[x, y].IsLive then 1 else 0)
+    |> Array.sumBy (fun (x, y) -> if cells.[y, x].IsLive then 1 else 0)
 
 let inline (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
 let inline (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
@@ -40,7 +40,7 @@ let countLiveCells (cells: Cell[,]) =
 
 let nextGeneration (board: Board) =
     let nextGeneration =
-        fun x y cell ->
+        fun y x cell ->
             getNeighborsRange board.Width board.Height x y
             |> countLiveNeighbors board.Cells
             |> nextCellState cell
