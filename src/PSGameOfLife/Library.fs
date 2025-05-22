@@ -7,17 +7,23 @@ open System.Management.Automation
 type StartGameOfLifeCommand() =
     inherit Cmdlet()
 
-    member val Width = 120 with get, set
-    member val Height = 40 with get, set
+    // NOTE: disable board sizing for CUI.
+    // member val Width = 120 with get, set
+    // member val Height = 40 with get, set
     override __.BeginProcessing() = ()
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
         let random = Random()
 
-        let board =
-            Core.createBoard (fun _ _ -> if random.NextDouble() < 0.41 then Core.Live else Core.Dead) __.Width __.Height
+        let height = Console.WindowHeight - 3 - 2 // TODO: capsule into the screen.
 
-        use screen = new UI.Character.Screen(__.Width, __.Height)
+        let board =
+            Core.createBoard
+                (fun _ _ -> if random.NextDouble() < 0.41 then Core.Live else Core.Dead)
+                Console.WindowWidth
+                height
+
+        use screen = new UI.Character.Screen(Console.WindowWidth, height)
 
         UI.Character.game screen board |> Async.RunSynchronously
