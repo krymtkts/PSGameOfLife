@@ -7,6 +7,8 @@ open PSGameOfLife.Core
 
 type Screen(width: int, height: int) =
     let startY = Console.GetCursorPosition().ToTuple() |> snd
+    let cursorVisible = Console.CursorVisible
+
     let originalOut = Console.Out
 
     let writer =
@@ -17,35 +19,41 @@ type Screen(width: int, height: int) =
         sw
 
     [<Literal>]
-    let heightOfHeader = 4
+    let heightOfHeader = 3
 
-    let diff =
-        Console.WindowHeight - height - heightOfHeader - startY
+    let screenHeight = height + heightOfHeader
+
+    let diff, remaining =
+        let remaining = Console.WindowHeight - startY
+
+        screenHeight - remaining + 1
         |> function
-            | x when x < 0 -> height + heightOfHeader
-            | _ -> 0
+            | diff when diff > 0 -> diff, remaining
+            | _ -> 0, 0
 
     do
+        Console.CursorVisible <- false
         // // NOTE: add lines to the end of the screen for scrolling using the PSReadLine method.
-        String.replicate diff Environment.NewLine |> Console.Write
+        String.replicate (diff + remaining) Environment.NewLine |> Console.Write
 
         writer.Flush()
-        (0, if diff = 0 then startY else 0) |> Console.SetCursorPosition
+        (0, startY - (if diff = 0 then 0 else diff + 1)) |> Console.SetCursorPosition
 
     interface IDisposable with
         member __.Dispose() =
             let pos = Console.GetCursorPosition().ToTuple()
 
-            // NOTE: Reset Console.Out before disposing screen to prevent buffer loss.
+            String.replicate Console.WindowWidth " "
+            |> Array.replicate screenHeight
+            |> Array.iter Console.WriteLine
+
+            writer.Flush()
+            pos |> Console.SetCursorPosition
+
             Console.SetOut originalOut
             writer.Dispose()
 
-            String.replicate Console.WindowWidth " "
-            |> Array.replicate (height + heightOfHeader)
-            |> String.concat Environment.NewLine
-            |> Console.Write
-
-            pos |> Console.SetCursorPosition
+            Console.CursorVisible <- cursorVisible
 
     member __.Write(s: string) = s |> Console.Write
     member __.WriteLine(s: string) = s |> Console.WriteLine
