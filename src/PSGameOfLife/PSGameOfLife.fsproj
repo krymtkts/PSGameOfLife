@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Compile Include="Core.fs" />
+    <Compile Include="UI.Character.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
 
