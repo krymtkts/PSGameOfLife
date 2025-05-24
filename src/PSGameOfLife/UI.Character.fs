@@ -14,8 +14,12 @@ type Screen() =
     let heightForAdjustment = 2
 
     let startY = Console.GetCursorPosition().ToTuple() |> snd
-    let width = Console.WindowWidth
-    let height = Console.WindowHeight - heightOfHeader - heightForAdjustment
+    let width = LanguagePrimitives.Int32WithMeasure<width> Console.WindowWidth
+
+    let height =
+        Console.WindowHeight - heightOfHeader - heightForAdjustment
+        |> LanguagePrimitives.Int32WithMeasure<height>
+
     let cursorVisible = Console.CursorVisible
     let originalOut = Console.Out
 
@@ -26,7 +30,7 @@ type Screen() =
         sw |> Console.SetOut
         sw
 
-    let screenHeight = height + heightOfHeader
+    let screenHeight = int height + heightOfHeader
 
     let diff, remaining =
         let remaining = Console.WindowHeight - startY
@@ -107,7 +111,7 @@ let inline render<'Screen
     board.Cells
     |> Array2D.iteri (fun y x cell ->
         toSymbol cell
-        |> if x + 1 < board.Width then
+        |> if x + 1 < int board.Width then
                screen.Write
            else
                screen.WriteLine)

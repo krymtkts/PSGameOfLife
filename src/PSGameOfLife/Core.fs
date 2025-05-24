@@ -8,10 +8,16 @@ type Cell =
 [<Measure>]
 type ms
 
+[<Measure>]
+type width
+
+[<Measure>]
+type height
+
 [<Struct>]
 type Board =
-    { Width: int
-      Height: int
+    { Width: int<width>
+      Height: int<height>
       Lives: int
       Generation: int
       Interval: int<ms>
@@ -21,12 +27,12 @@ let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
 
-let getNeighborsRange (width: int) (height: int) (x: int) (y: int) =
+let getNeighborsRange (width: int<width>) (height: int<height>) (x: int) (y: int) =
     neighborOffsets
     |> Array.choose (fun (dx, dy) ->
         let nx, ny = x + dx, y + dy
 
-        if nx >= 0 && nx < width && ny >= 0 && ny < height then
+        if nx >= 0 && nx < int width && ny >= 0 && ny < int height then
             Some(nx, ny)
         else
             None)
@@ -67,8 +73,8 @@ let nextGeneration (board: Board) =
         Lives = cells |> countLiveCells
         Cells = cells }
 
-let createBoard initializer width height (interval: int<ms>) =
-    let cells = Array2D.init height width initializer
+let createBoard initializer (width: int<width>) (height: int<height>) (interval: int<ms>) =
+    let cells = Array2D.init (int height) (int width) initializer
 
     { Width = width
       Height = height

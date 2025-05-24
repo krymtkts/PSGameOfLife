@@ -14,8 +14,8 @@ let testsCore =
 
           test "When a dead cell without neighbors" {
               let board =
-                  { Width = 1
-                    Height = 1
+                  { Width = 1<width>
+                    Height = 1<height>
                     Lives = 0
                     Generation = 0
                     Interval = 0<ms>
@@ -32,8 +32,8 @@ let testsCore =
 
           test "When a live cell without neighbors" {
               let board =
-                  { Width = 1
-                    Height = 1
+                  { Width = 1<width>
+                    Height = 1<height>
                     Lives = 1
                     Generation = 0
                     Interval = 0<ms>
@@ -51,8 +51,8 @@ let testsCore =
 
           test "When 3 live neighbors in a 2x2 board" {
               let board =
-                  { Width = 2
-                    Height = 2
+                  { Width = 2<width>
+                    Height = 2<height>
                     Lives = 3
                     Generation = 0
                     Interval = 0<ms>
@@ -84,8 +84,8 @@ let testsCore =
 
           test "When Block" {
               let board =
-                  { Width = 2
-                    Height = 2
+                  { Width = 2<width>
+                    Height = 2<height>
                     Lives = 4
                     Generation = 0
                     Interval = 0<ms>
@@ -117,8 +117,8 @@ let testsCore =
 
           test "when Blinker is vertical" {
               let board =
-                  { Width = 3
-                    Height = 3
+                  { Width = 3<width>
+                    Height = 3<height>
                     Lives = 3
                     Generation = 0
                     Interval = 0<ms>
