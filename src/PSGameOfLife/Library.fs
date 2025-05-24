@@ -14,16 +14,14 @@ type StartGameOfLifeCommand() =
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
-        let random = Random()
-
-        let height = Console.WindowHeight - 3 - 2 // TODO: capsule into the screen.
+        use screen = new UI.Character.Screen()
 
         let board =
+            let random = Random()
+
             Core.createBoard
                 (fun _ _ -> if random.NextDouble() < 0.41 then Core.Live else Core.Dead)
-                Console.WindowWidth
-                height
-
-        use screen = new UI.Character.Screen(Console.WindowWidth, height)
+                screen.Width
+                screen.Height
 
         UI.Character.game screen board |> Async.RunSynchronously

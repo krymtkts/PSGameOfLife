@@ -5,10 +5,18 @@ open System.IO
 
 open PSGameOfLife.Core
 
-type Screen(width: int, height: int) =
-    let startY = Console.GetCursorPosition().ToTuple() |> snd
-    let cursorVisible = Console.CursorVisible
+type Screen() =
+    [<Literal>]
+    let heightOfHeader = 3
 
+    // NOTE: this is a hack to render at the same position without causing scrolling.
+    [<Literal>]
+    let heightForAdjustment = 2
+
+    let startY = Console.GetCursorPosition().ToTuple() |> snd
+    let width = Console.WindowWidth
+    let height = Console.WindowHeight - heightOfHeader - heightForAdjustment
+    let cursorVisible = Console.CursorVisible
     let originalOut = Console.Out
 
     let writer =
@@ -18,14 +26,12 @@ type Screen(width: int, height: int) =
         sw |> Console.SetOut
         sw
 
-    [<Literal>]
-    let heightOfHeader = 3
-
     let screenHeight = height + heightOfHeader
 
     let diff, remaining =
         let remaining = Console.WindowHeight - startY
 
+        // NOTE: 1 is a hack to render at the same position without causing scrolling.
         screenHeight - remaining + 1
         |> function
             | diff when diff > 0 -> diff, remaining
@@ -33,10 +39,11 @@ type Screen(width: int, height: int) =
 
     do
         Console.CursorVisible <- false
-        // // NOTE: add lines to the end of the screen for scrolling using the PSReadLine method.
+        // NOTE: add lines to the end of the screen for scrolling using the PSReadLine method.
         String.replicate (diff + remaining) Environment.NewLine |> Console.Write
 
         writer.Flush()
+        // NOTE: 1 is a hack to render at the same position without causing scrolling.
         (0, startY - (if diff = 0 then 0 else diff + 1)) |> Console.SetCursorPosition
 
     interface IDisposable with
@@ -58,6 +65,8 @@ type Screen(width: int, height: int) =
     member __.Write(s: string) = s |> Console.Write
     member __.WriteLine(s: string) = s |> Console.WriteLine
     member __.Flush() = writer.Flush()
+    member __.Width = width
+    member __.Height = height
 
     member val Diff = diff
 
