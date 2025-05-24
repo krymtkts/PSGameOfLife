@@ -63,8 +63,8 @@ type Screen() =
             Console.CursorVisible <- cursorVisible
 
     member __.Write(s: string) = s |> Console.Write
-    member __.WriteLine() = Console.WriteLine()
     member __.WriteLine(s: string) = s |> Console.WriteLine
+    member __.EmptyWriteLine() = Console.WriteLine()
     member __.Flush() = writer.Flush()
     member __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
     member __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
@@ -80,7 +80,17 @@ let toSymbol cell =
     | Dead -> " "
     | Live -> "X"
 
-let render (screen: Screen) (board: Board) =
+let inline render<'Screen
+    when 'Screen: (member GetCursorPosition: unit -> int * int)
+    and 'Screen: (member Diff: int)
+    and 'Screen: (member Write: string -> unit)
+    and 'Screen: (member WriteLine: string -> unit)
+    and 'Screen: (member EmptyWriteLine: unit -> unit)
+    and 'Screen: (member Flush: unit -> unit)
+    and 'Screen: (member SetCursorPosition: int * int -> unit)>
+    (screen: 'Screen)
+    (board: Board)
+    =
     let pos = screen.GetCursorPosition()
     let info = $"#Press Q to quit. Board: %d{board.Width} x %d{board.Height}"
 #if DEBUG
@@ -92,7 +102,7 @@ let render (screen: Screen) (board: Board) =
     $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
     |> screen.WriteLine
 
-    screen.WriteLine()
+    screen.EmptyWriteLine()
 
     board.Cells
     |> Array2D.iteri (fun y x cell ->
@@ -105,20 +115,22 @@ let render (screen: Screen) (board: Board) =
     screen.Flush()
     pos |> screen.SetCursorPosition
 
-let stopRequested (screen: Screen) =
+let inline stopRequested<'Screen
+    when 'Screen: (member KeyAvailable: unit -> bool) and 'Screen: (member ReadKey: unit -> ConsoleKeyInfo)>
+    (screen: 'Screen)
+    =
     if screen.KeyAvailable() then
         let key = screen.ReadKey()
         if key.Key = ConsoleKey.Q then true else false
     else
         false
 
-[<TailCall>]
-let rec game screen board =
+let inline game (screen: ^Screen) (board: Board) =
     async {
-        render screen board
-        do! Async.Sleep 100
+        let mutable b = board
 
-        match stopRequested screen with
-        | true -> return ()
-        | false -> return! board |> nextGeneration |> game screen
+        while not <| stopRequested screen do
+            render screen b
+            do! Async.Sleep 100
+            b <- b |> nextGeneration
     }
