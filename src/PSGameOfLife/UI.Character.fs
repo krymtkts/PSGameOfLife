@@ -63,6 +63,7 @@ type Screen() =
             Console.CursorVisible <- cursorVisible
 
     member __.Write(s: string) = s |> Console.Write
+    member __.WriteLine() = Console.WriteLine()
     member __.WriteLine(s: string) = s |> Console.WriteLine
     member __.Flush() = writer.Flush()
     member __.Width = width
@@ -84,7 +85,7 @@ let render (screen: Screen) (board: Board) =
     $"#Generation: %d{board.Generation} Living: %d{board.Lives} "
     |> screen.WriteLine
 
-    "" |> screen.WriteLine
+    screen.WriteLine()
 
     board.Cells
     |> Array2D.iteri (fun y x cell ->
