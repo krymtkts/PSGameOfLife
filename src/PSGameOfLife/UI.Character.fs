@@ -66,10 +66,10 @@ type Screen() =
     member __.WriteLine() = Console.WriteLine()
     member __.WriteLine(s: string) = s |> Console.WriteLine
     member __.Flush() = writer.Flush()
+
     member __.Width = width
     member __.Height = height
-
-    member val Diff = diff
+    member __.Diff = diff
 
 let toSymbol cell =
     match cell with
@@ -78,11 +78,15 @@ let toSymbol cell =
 
 let render (screen: Screen) (board: Board) =
     let pos = Console.GetCursorPosition().ToTuple()
+    let info = $"#Press Q to quit. Board: %d{board.Width} x %d{board.Height}"
+#if DEBUG
+    // NOTE: additional info for debugging.
+    let info =
+        $"%s{info} Position: %A{pos} Height: %d{Console.WindowHeight} Diff: %d{screen.Diff}"
+#endif
+    info |> screen.WriteLine
 
-    $"Press Q to quit. Board: %d{board.Width}x%d{board.Height} Position: %A{pos} Height: %d{Console.WindowHeight} Diff: %d{screen.Diff}"
-    |> screen.WriteLine
-
-    $"#Generation: %d{board.Generation} Living: %d{board.Lives} "
+    $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
     |> screen.WriteLine
 
     screen.WriteLine()
