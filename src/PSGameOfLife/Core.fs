@@ -5,12 +5,16 @@ type Cell =
     | Dead
     | Live
 
+[<Measure>]
+type ms
+
 [<Struct>]
 type Board =
     { Width: int
       Height: int
       Lives: int
       Generation: int
+      Interval: int<ms>
       Cells: Cell[,] }
 
 let neighborOffsets =
@@ -63,11 +67,12 @@ let nextGeneration (board: Board) =
         Lives = cells |> countLiveCells
         Cells = cells }
 
-let createBoard initializer width height =
+let createBoard initializer width height (interval: int<ms>) =
     let cells = Array2D.init height width initializer
 
     { Width = width
       Height = height
       Lives = cells |> countLiveCells
       Generation = 0
+      Interval = interval
       Cells = cells }

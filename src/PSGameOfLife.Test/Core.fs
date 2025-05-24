@@ -18,6 +18,7 @@ let testsCore =
                     Height = 1
                     Lives = 0
                     Generation = 0
+                    Interval = 0<ms>
                     Cells = array2D [| [| Dead |] |] }
 
               board
@@ -35,6 +36,7 @@ let testsCore =
                     Height = 1
                     Lives = 1
                     Generation = 0
+                    Interval = 0<ms>
                     Cells = array2D [| [| Live |] |] }
 
               board
@@ -53,6 +55,7 @@ let testsCore =
                     Height = 2
                     Lives = 3
                     Generation = 0
+                    Interval = 0<ms>
                     Cells =
                       array2D
                           [|
@@ -85,6 +88,7 @@ let testsCore =
                     Height = 2
                     Lives = 4
                     Generation = 0
+                    Interval = 0<ms>
                     Cells =
                       array2D
                           [|
@@ -117,6 +121,7 @@ let testsCore =
                     Height = 3
                     Lives = 3
                     Generation = 0
+                    Interval = 0<ms>
                     Cells =
                       array2D
                           [|

@@ -125,12 +125,15 @@ let inline stopRequested<'Screen
     else
         false
 
+[<Literal>]
+let defaultInterval = 100<ms>
+
 let inline game (screen: ^Screen) (board: Board) =
     async {
         let mutable b = board
 
         while not <| stopRequested screen do
             render screen b
-            do! Async.Sleep 100
+            do! Async.Sleep(int board.Interval)
             b <- b |> nextGeneration
     }
