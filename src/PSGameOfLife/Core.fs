@@ -19,8 +19,13 @@ let neighborOffsets =
 
 let getNeighborsRange (width: int) (height: int) (x: int) (y: int) =
     neighborOffsets
-    |> Array.map (fun (dx, dy) -> x + dx, y + dy)
-    |> Array.filter (fun (x, y) -> x >= 0 && x < width && y >= 0 && y < height)
+    |> Array.choose (fun (dx, dy) ->
+        let nx, ny = x + dx, y + dy
+
+        if nx >= 0 && nx < width && ny >= 0 && ny < height then
+            Some(nx, ny)
+        else
+            None)
 
 let countLiveNeighbors (cells: Cell[,]) (neighborsRange: (int * int) array) =
     neighborsRange
@@ -36,7 +41,14 @@ let nextCellState (cell: Cell) (lives: int) =
     | _ -> Dead
 
 let countLiveCells (cells: Cell[,]) =
-    cells |> Seq.cast<Cell> |> Seq.sumBy (fun cell -> if cell.IsLive then 1 else 0)
+    let mutable alive = 0
+
+    cells
+    |> Array2D.iter (fun cell ->
+        if cell.IsLive then
+            alive <- alive + 1)
+
+    alive
 
 let nextGeneration (board: Board) =
     let nextGeneration y x cell =
