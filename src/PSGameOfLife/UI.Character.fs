@@ -66,6 +66,10 @@ type Screen() =
     member __.WriteLine() = Console.WriteLine()
     member __.WriteLine(s: string) = s |> Console.WriteLine
     member __.Flush() = writer.Flush()
+    member __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
+    member __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
+    member __.KeyAvailable() = Console.KeyAvailable
+    member __.ReadKey() = Console.ReadKey(true)
 
     member __.Width = width
     member __.Height = height
@@ -77,12 +81,11 @@ let toSymbol cell =
     | Live -> "X"
 
 let render (screen: Screen) (board: Board) =
-    let pos = Console.GetCursorPosition().ToTuple()
+    let pos = screen.GetCursorPosition()
     let info = $"#Press Q to quit. Board: %d{board.Width} x %d{board.Height}"
 #if DEBUG
     // NOTE: additional info for debugging.
-    let info =
-        $"%s{info} Position: %A{pos} Height: %d{Console.WindowHeight} Diff: %d{screen.Diff}"
+    let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
 #endif
     info |> screen.WriteLine
 
@@ -100,11 +103,11 @@ let render (screen: Screen) (board: Board) =
                screen.WriteLine)
 
     screen.Flush()
-    pos |> Console.SetCursorPosition
+    pos |> screen.SetCursorPosition
 
-let stopRequested () =
-    if Console.KeyAvailable then
-        let key = Console.ReadKey(true)
+let stopRequested (screen: Screen) =
+    if screen.KeyAvailable() then
+        let key = screen.ReadKey()
         if key.Key = ConsoleKey.Q then true else false
     else
         false
@@ -115,7 +118,7 @@ let rec game screen board =
         render screen board
         do! Async.Sleep 100
 
-        match stopRequested () with
+        match stopRequested screen with
         | true -> return ()
         | false -> return! board |> nextGeneration |> game screen
     }
