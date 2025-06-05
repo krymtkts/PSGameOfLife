@@ -4,27 +4,79 @@
     <command:details>
       <command:name>Start-GameOfLife</command:name>
       <maml:description>
-        <maml:para>{{ Fill in the Synopsis }}</maml:para>
+        <maml:para>Starts an interactive Conway's Game of Life simulation in the console.</maml:para>
       </maml:description>
       <command:verb>Start</command:verb>
       <command:noun>GameOfLife</command:noun>
     </command:details>
     <maml:description>
-      <maml:para>{{ Fill in the Description }}</maml:para>
+      <maml:para>Runs Conway's Game of Life in the console window. The board is randomly initialized. The simulation shows each generation in the console. Press 'Q' to quit the simulation at any time. You can control the randomness of the initial state. You can also set the interval between generations using parameters.</maml:para>
     </maml:description>
     <command:syntax>
       <command:syntaxItem>
         <maml:name>Start-GameOfLife</maml:name>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>FateRoll</maml:name>
+          <maml:description>
+            <maml:para>Specifies the probability (between 0.1 and 0.5).
+This value sets the chance that each cell is alive at the start of the simulation.
+Lower values create sparser initial boards. Higher values create denser ones.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Double</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>IntervalMs</maml:name>
+          <maml:description>
+            <maml:para>Specifies the interval in milliseconds between each generation update.
+The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
       </command:syntaxItem>
       <command:syntaxItem>
         <maml:name>Start-GameOfLife</maml:name>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>FateRoll</maml:name>
+          <maml:description>
+            <maml:para>Specifies the probability (between 0.1 and 0.5).
+This value sets the chance that each cell is alive at the start of the simulation.
+Lower values create sparser initial boards. Higher values create denser ones.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Double</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>IntervalMs</maml:name>
+          <maml:description>
+            <maml:para>Specifies the interval in milliseconds between each generation update.
+The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
       </command:syntaxItem>
     </command:syntax>
     <command:parameters>
       <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>FateRoll</maml:name>
+        <maml:description>
+          <maml:para>Specifies the probability (between 0.1 and 0.5).
+This value sets the chance that each cell is alive at the start of the simulation.
+Lower values create sparser initial boards. Higher values create denser ones.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Double</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>IntervalMs</maml:name>
+        <maml:description>
+          <maml:para>Specifies the interval in milliseconds between each generation update.
+The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
         <maml:name>ProgressAction</maml:name>
         <maml:description>
-          <maml:para>{{ Fill ProgressAction Description }}</maml:para>
+          <maml:para>This follows the PowerShell standard.
+This parameter has no effect in this version.</maml:para>
         </maml:description>
         <command:parameterValue required="false" variableLength="true">ActionPreference</command:parameterValue>
       </command:parameter>
@@ -59,14 +111,19 @@
         <maml:title>--------- Example 1 ---------</maml:title>
         <maml:introduction>
           <maml:para>```powershell
-PS C:\&gt; {{ Add example code here }}
+PS C:\&gt; Start-GameOfLife -FateRoll 0.25 -IntervalMs 200
 ```</maml:para>
-          <maml:para>{{ Add example description here }}</maml:para>
+          <maml:para>This command starts the Game of Life. Each cell has a 25% chance to be alive at the start. The board updates every 200 milliseconds.</maml:para>
         </maml:introduction>
         <dev:code />
         <dev:remarks />
       </command:example>
     </command:examples>
-    <command:relatedLinks />
+    <command:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Conway's Game of Life - Wikipedia</maml:linkText>
+        <command:uri>https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life</command:uri>
+      </maml:navigationLink>
+    </command:relatedLinks>
   </command:command>
 </helpItems>
