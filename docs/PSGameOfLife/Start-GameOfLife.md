@@ -1,9 +1,9 @@
 ﻿---
 document type: cmdlet
 external help file: PSGameOfLife.dll-Help.xml
-HelpUri:
+HelpUri: https://github.com/krymtkts/PSGameOfLife/blob/main/docs/PSGameOfLife/Start-GameOfLife.md
 Module Name: PSGameOfLife
-ms.date: 05-19-2025
+ms.date: 06-05-2025
 PlatyPS schema version: 2024-05-01
 ---
 
@@ -11,7 +11,7 @@ PlatyPS schema version: 2024-05-01
 
 ## SYNOPSIS
 
-{{ Fill in the Synopsis }}
+Starts an interactive Conway's Game of Life simulation in the console.
 
 ## SYNTAX
 
@@ -24,30 +24,81 @@ Start-GameOfLife [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ### \_\_AllParameterSets
 
 ```
-Start-GameOfLife [<CommonParameters>]
+Start-GameOfLife [-FateRoll <double>] [-IntervalMs <int>] [<CommonParameters>]
 ```
 
 ## ALIASES
 
 ## DESCRIPTION
 
-{{ Fill in the Description }}
+Runs Conway's Game of Life in the console window.
+The board is randomly initialized. The simulation shows each generation in the console.
+Press 'Q' to quit the simulation at any time.
+You can control the randomness of the initial state. You can also set the interval between generations using parameters.
 
 ## EXAMPLES
 
 ### Example 1
 
 ```powershell
-PS C:\> {{ Add example code here }}
+PS C:\> Start-GameOfLife -FateRoll 0.25 -IntervalMs 200
 ```
 
-{{ Add example description here }}
+This command starts the Game of Life. Each cell has a 25% chance to be alive at the start. The board updates every 200 milliseconds.
 
 ## PARAMETERS
 
+### -FateRoll
+
+Specifies the probability (between 0.1 and 0.5).
+This value sets the chance that each cell is alive at the start of the simulation.
+Lower values create sparser initial boards. Higher values create denser ones.
+
+```yaml
+Type: System.Double
+DefaultValue: ""
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: (All)
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
+### -IntervalMs
+
+Specifies the interval in milliseconds between each generation update.
+The default is 100 ms. Increase this value to slow down the simulation.
+
+```yaml
+Type: System.Int32
+DefaultValue: ""
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: (All)
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
 ### -ProgressAction
 
-{{ Fill ProgressAction Description }}
+This follows the PowerShell standard.
+This parameter has no effect in this version.
 
 ```yaml
 Type: ActionPreference
@@ -87,4 +138,4 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## RELATED LINKS
 
-{{ Fill in the related links here }}
+[Conway's Game of Life - Wikipedia](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
