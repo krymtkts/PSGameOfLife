@@ -21,6 +21,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
 
+ <!-- Disable debug symbols for the release build. -->
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Core.fs" />
     <Compile Include="Algorithm.fs" />
