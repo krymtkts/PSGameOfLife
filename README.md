@@ -3,7 +3,7 @@
 ![Top Language](https://img.shields.io/github/languages/top/krymtkts/PSGameOfLife?color=%23b845fc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-PSGameOfLife is a PowerShell module and cmdlet written in F#.
+PSGameOfLife is a PowerShell module written in F#.
 It runs [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) interactively in your console.
 
 Tested on PowerShell 7.4 or later for both Windows and Ubuntu.
@@ -13,10 +13,11 @@ Tested on PowerShell 7.4 or later for both Windows and Ubuntu.
 - Interactive [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) simulation in the terminal
 - Customizable initial randomness and update interval
 - Simple PowerShell cmdlet interface
+- CUI available, GUI planned
 
 ## Installation
 
-You can install PSGameOfLife from the PowerShell Gallery (when published):
+You can install PSGameOfLife from the PowerShell Gallery:
 
 ```powershell
 # Recommended: PSResourceGet (PowerShellGet 3.0)
