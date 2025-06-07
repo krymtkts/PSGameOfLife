@@ -20,7 +20,6 @@ type Screen() =
         Console.WindowHeight - heightOfHeader - heightForAdjustment
         |> LanguagePrimitives.Int32WithMeasure<height>
 
-    let cursorVisible = Console.CursorVisible
     let originalOut = Console.Out
 
     let writer =
@@ -64,7 +63,8 @@ type Screen() =
             Console.SetOut originalOut
             writer.Dispose()
 
-            Console.CursorVisible <- cursorVisible
+            // NOTE: get_CursorPosition doesn't work on Linux, so we cannot backup the cursor position. We can only set it back to true directly.
+            Console.CursorVisible <- true
 
     member __.Write(s: string) = s |> Console.Write
     member __.WriteLine(s: string) = s |> Console.WriteLine
