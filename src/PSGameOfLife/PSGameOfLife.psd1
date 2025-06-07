@@ -15,7 +15,9 @@
     ModuleVersion = '0.0.1'
 
     # Supported PSEditions
-    # CompatiblePSEditions = @()
+    CompatiblePSEditions = @(
+        'Core'
+    )
 
     # ID used to uniquely identify this module
     GUID = 'f8d44c8a-225b-4db6-a6a9-21bcc48c12d7'
@@ -30,10 +32,10 @@
     Copyright = 'Copyright © 2025 Takatoshi Kuriyama. All rights reserved.'
 
     # Description of the functionality provided by this module
-    # Description = ''
+    Description = "Interactive Conway's Game of Life module for PowerShell, written in F#. Simulates the Game of Life in your terminal with customizable settings."
 
     # Minimum version of the PowerShell engine required by this module
-    # PowerShellVersion = ''
+    PowerShellVersion = '7.4'
 
     # Name of the PowerShell host required by this module
     # PowerShellHostName = ''
@@ -97,7 +99,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('')
+            Tags = @('game', 'game-of-life', 'conway', 'interactive', 'simulation')
 
             # A URL to the license for this module.
             LicenseUri = 'https://raw.githubusercontent.com/krymtkts/PSGameOfLife/main/LICENSE'
