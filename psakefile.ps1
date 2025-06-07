@@ -74,7 +74,7 @@ Task Build -Depends Clean {
     if ($module.ModuleVersion -ne (Resolve-Path "./src/*/${ModuleName}.fsproj" | Select-Xml '//Version/text()').Node.Value) {
         throw 'Module manifest (.psd1) version does not match project (.fsproj) version.'
     }
-    dotnet publish -c $Stage
+    dotnet publish $ModuleSrcPath -c $Stage
     if (-not $?) {
         throw 'dotnet publish failed.'
     }
