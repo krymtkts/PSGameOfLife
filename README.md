@@ -6,7 +6,10 @@
 PSGameOfLife is a PowerShell module written in F#.
 It runs [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) interactively in your console.
 
-Tested on PowerShell 7.4 or later for both Windows and Ubuntu.
+Tested on PowerShell 7.4 or later with Windows Terminal on both Windows and Ubuntu.
+Visual Studio Code terminal appears to have a higher load than Windows Terminal.
+
+![capture](./docs/images/psgameoflife.gif)
 
 ## Features
 
