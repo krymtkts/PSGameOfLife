@@ -1,0 +1,46 @@
+name: Test
+description: Setup .NET, install PowerShell modules and run all tests.
+
+inputs:
+  codecov_token:
+    description: "Codecov token"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+    - name: Install modules from PSGallery
+      shell: pwsh
+      run: |
+        Set-PSResourceRepository PSGallery -Trusted
+        Install-PSResource Psake,PSScriptAnalyzer -Quiet -Reinstall -Scope CurrentUser
+        Install-PSResource Microsoft.PowerShell.PlatyPS -Prerelease -Quiet -Reinstall -Scope CurrentUser
+    - name: Execute All Tests
+      shell: pwsh
+      run: |
+        Invoke-Psake -taskList TestAll
+        if (-not $psake.build_success) { exit 1 }
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      if: runner.os == 'Linux'
+      with:
+        file: ./coverage.cobertura.xml
+      env:
+        CODECOV_TOKEN: ${{ inputs.codecov_token }}
+    # NOTE: separate multiple SARIF uploads to add categories. see https://github.blog/changelog/2024-05-06-code-scanning-will-stop-combining-runs-from-a-single-upload/
+    - name: Upload SARIF file for main project
+      uses: github/codeql-action/upload-sarif@v3
+      if: runner.os == 'Linux'
+      with:
+        sarif_file: analysis/PSGameOfLife-report.sarif
+        category: Main
+    - name: Upload SARIF file for test project
+      uses: github/codeql-action/upload-sarif@v3
+      if: runner.os == 'Linux'
+      with:
+        sarif_file: analysis/PSGameOfLife.Test-report.sarif
+        category: Test
