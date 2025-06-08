@@ -3,7 +3,7 @@ document type: cmdlet
 external help file: PSGameOfLife.dll-Help.xml
 HelpUri: https://github.com/krymtkts/PSGameOfLife/blob/main/docs/PSGameOfLife/Start-GameOfLife.md
 Module Name: PSGameOfLife
-ms.date: 06-05-2025
+ms.date: 06-08-2025
 PlatyPS schema version: 2024-05-01
 ---
 
@@ -74,7 +74,7 @@ HelpMessage: ""
 
 ### -IntervalMs
 
-Specifies the interval in milliseconds between each generation update.
+Specifies the interval in milliseconds between each generation update (between 0 and 1000).
 The default is 100 ms. Increase this value to slow down the simulation.
 
 ```yaml
