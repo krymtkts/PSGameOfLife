@@ -141,3 +141,4 @@ let inline game (screen: ^Screen) (board: Board) =
             do! Async.Sleep(int board.Interval)
             b <- b |> nextGeneration
     }
+    |> Async.RunSynchronously

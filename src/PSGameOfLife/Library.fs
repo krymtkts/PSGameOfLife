@@ -20,11 +20,23 @@ type StartGameOfLifeCommand() =
     [<ValidateRange(0, 1000)>]
     member val IntervalMs = UI.Character.defaultInterval with get, set
 
+    [<Parameter(Mandatory = false, HelpMessage = "UI mode for the game.")>]
+    [<ValidateSet("CUI", "GUI")>]
+    member val UI: string = "CUI" with get, set
+
     override __.BeginProcessing() = ()
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
-        use screen = new UI.Character.Screen()
-        let initializer = Algorithm.random __.FateRoll
-        let board = Core.createBoard initializer screen.Width screen.Height __.IntervalMs
-        UI.Character.game screen board |> Async.RunSynchronously
+        match __.UI with
+        | "CUI" ->
+            use screen = new UI.Character.Screen()
+            let initializer = Algorithm.random __.FateRoll
+            let board = Core.createBoard initializer screen.Width screen.Height __.IntervalMs
+            UI.Character.game screen board
+        | "GUI" ->
+            use screen = new UI.Avalonia.Screen()
+            let initializer = Algorithm.random __.FateRoll
+            let board = Core.createBoard initializer screen.Width screen.Height __.IntervalMs
+            UI.Avalonia.game screen board
+        | _ -> failwithf "Unknown UI mode: %s. Use 'CUI' or 'GUI'." __.UI
