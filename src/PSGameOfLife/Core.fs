@@ -9,15 +9,15 @@ type Cell =
 type ms
 
 [<Measure>]
-type width
+type col
 
 [<Measure>]
-type height
+type row
 
 [<Struct>]
 type Board =
-    { Width: int<width>
-      Height: int<height>
+    { Column: int<col>
+      Row: int<row>
       Lives: int
       Generation: int
       Interval: int<ms>
@@ -27,12 +27,12 @@ let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
 
-let getNeighborsRange (width: int<width>) (height: int<height>) (x: int) (y: int) =
+let getNeighborsRange (col: int<col>) (row: int<row>) (x: int) (y: int) =
     neighborOffsets
     |> Array.choose (fun (dx, dy) ->
         let nx, ny = x + dx, y + dy
 
-        if nx >= 0 && nx < int width && ny >= 0 && ny < int height then
+        if nx >= 0 && nx < int col && ny >= 0 && ny < int row then
             Some(nx, ny)
         else
             None)
@@ -62,7 +62,7 @@ let countLiveCells (cells: Cell[,]) =
 
 let nextGeneration (board: Board) =
     let nextGeneration y x cell =
-        getNeighborsRange board.Width board.Height x y
+        getNeighborsRange board.Column board.Row x y
         |> countLiveNeighbors board.Cells
         |> nextCellState cell
 
@@ -73,11 +73,11 @@ let nextGeneration (board: Board) =
         Lives = cells |> countLiveCells
         Cells = cells }
 
-let createBoard initializer (width: int<width>) (height: int<height>) (interval: int<ms>) =
-    let cells = Array2D.init (int height) (int width) initializer
+let createBoard initializer (col: int<col>) (row: int<row>) (interval: int<ms>) =
+    let cells = Array2D.init (int row) (int col) initializer
 
-    { Width = width
-      Height = height
+    { Column = col
+      Row = row
       Lives = cells |> countLiveCells
       Generation = 0
       Interval = interval

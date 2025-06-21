@@ -1,4 +1,4 @@
-module PSGameOfLife.UI.Avalonia
+module PSGameOfLife.View.Avalonia
 
 open System
 // open System.IO
@@ -196,8 +196,8 @@ type Screen() =
             | null -> ()
             | window -> window.Close()
 
-    member __.Width = LanguagePrimitives.Int32WithMeasure<width> 30
-    member __.Height = LanguagePrimitives.Int32WithMeasure<height> 30
+    member __.Column = LanguagePrimitives.Int32WithMeasure<col> 30
+    member __.Row = LanguagePrimitives.Int32WithMeasure<row> 30
 
 // let toSymbol cell =
 //     match cell with

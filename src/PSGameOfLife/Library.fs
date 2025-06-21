@@ -62,26 +62,26 @@ type StartGameOfLifeCommand() =
 
     [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.")>]
     [<ValidateRange(0, 1000)>]
-    member val IntervalMs = UI.Character.defaultInterval with get, set
+    member val IntervalMs = View.Character.defaultInterval with get, set
 
     [<Parameter(Mandatory = false, HelpMessage = "UI mode for the game.")>]
     [<ValidateSet("Cui", "Gui")>]
-    member val UIMode: string = "Cui" with get, set
+    member val UiMode: string = "Cui" with get, set
 
     override __.BeginProcessing() = ()
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
-        __.UIMode
+        __.UiMode
         |> UIMode.fromString
         |> function
             | UIMode.Cui ->
-                use screen = new UI.Character.Screen()
+                use screen = new View.Character.Screen()
                 let initializer = Algorithm.random __.FateRoll
-                let board = Core.createBoard initializer screen.Width screen.Height __.IntervalMs
-                UI.Character.game screen board
+                let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
+                View.Character.game screen board
             | UIMode.Gui ->
-                use screen = new UI.Avalonia.Screen()
+                use screen = new View.Avalonia.Screen()
                 let initializer = Algorithm.random __.FateRoll
-                let board = Core.createBoard initializer screen.Width screen.Height __.IntervalMs
-                UI.Avalonia.game screen board
+                let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
+                View.Avalonia.game screen board

@@ -1,4 +1,4 @@
-module PSGameOfLife.UI.Character
+module PSGameOfLife.View.Character
 
 open System
 open System.IO
@@ -14,11 +14,11 @@ type Screen() =
     let heightForAdjustment = 2
 
     let startY = Console.GetCursorPosition().ToTuple() |> snd
-    let width = LanguagePrimitives.Int32WithMeasure<width> Console.WindowWidth
+    let width = LanguagePrimitives.Int32WithMeasure<col> Console.WindowWidth
 
     let height =
         Console.WindowHeight - heightOfHeader - heightForAdjustment
-        |> LanguagePrimitives.Int32WithMeasure<height>
+        |> LanguagePrimitives.Int32WithMeasure<row>
 
     let originalOut = Console.Out
 
@@ -75,8 +75,8 @@ type Screen() =
     member __.KeyAvailable() = Console.KeyAvailable
     member __.ReadKey() = Console.ReadKey(true)
 
-    member __.Width = width
-    member __.Height = height
+    member __.Column = width
+    member __.Row = height
     member __.Diff = diff
 
 let toSymbol cell =
@@ -96,7 +96,7 @@ let inline render<'Screen
     (board: Board)
     =
     let pos = screen.GetCursorPosition()
-    let info = $"#Press Q to quit. Board: %d{board.Width} x %d{board.Height}"
+    let info = $"#Press Q to quit. Board: %d{board.Column} x %d{board.Row}"
 #if DEBUG
     // NOTE: additional info for debugging.
     let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
@@ -111,7 +111,7 @@ let inline render<'Screen
     board.Cells
     |> Array2D.iteri (fun y x cell ->
         toSymbol cell
-        |> if x + 1 < int board.Width then
+        |> if x + 1 < int board.Column then
                screen.Write
            else
                screen.WriteLine)
