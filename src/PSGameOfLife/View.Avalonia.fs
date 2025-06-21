@@ -90,6 +90,7 @@ module AssemblyHelper =
 
 module Main =
     open Avalonia.FuncUI
+    open Avalonia.Threading
 
     [<Struct>]
     type State = { Board: Board }
@@ -100,9 +101,9 @@ module Main =
     let update (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
         | Next ->
-#if DEBUG
-            printfn "Next generation requested. Current generation: %d" state.Board.Generation
-#endif
+            // #if DEBUG
+            //             printfn "Next generation requested. Current generation: %d" state.Board.Generation
+            // #endif
             { Board = state.Board |> nextGeneration }, Cmd.none
 
     let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
@@ -131,23 +132,34 @@ module Main =
                                   Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
                                   Canvas.left (float col * cellSize)
                                   Canvas.top (float row * cellSize)
-                                  Shapes.Rectangle.onTapped (fun _ ->
-#if DEBUG
-                                      printfn "Tapped cell at (%d, %d) generation %d" col row state.Board.Generation
-#endif
-                                      Next |> dispatch
-#if DEBUG
-                                      printfn
-                                          "Exit tapped cell at (%d, %d) generation %d"
-                                          col
-                                          row
-                                          state.Board.Generation
-#endif
+                                  //                                   Shapes.Rectangle.onTapped (fun _ ->
+                                  // #if DEBUG
+                                  //                                       printfn "Tapped cell at (%d, %d) generation %d" col row state.Board.Generation
+                                  // #endif
+                                  //                                       Next |> dispatch
+                                  // #if DEBUG
+                                  //                                       printfn
+                                  //                                           "Exit tapped cell at (%d, %d) generation %d"
+                                  //                                           col
+                                  //                                           row
+                                  //                                           state.Board.Generation
+                                  // #endif
+                                  //                                   )
 
-                                  ) ]
+                                  ]
 
                     ] ]
         |> generalize
+
+    let subscriptions (ms: float) (_state: State) =
+        let timerSub (dispatch: Msg -> unit) =
+            let invoke () =
+                dispatch Next
+                true
+
+            DispatcherTimer.Run(Func<bool>(invoke), TimeSpan.FromMilliseconds ms)
+
+        [ [ nameof timerSub ], timerSub ]
 
 type MainWindow(board: Board) as this =
     inherit HostWindow()
@@ -167,6 +179,7 @@ type MainWindow(board: Board) as this =
 
         Program.mkProgram init Main.update (Main.view cellSize)
         |> Program.withHost this
+        |> Program.withSubscription (Main.subscriptions <| float board.Interval)
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e)
