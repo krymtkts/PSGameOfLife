@@ -91,33 +91,34 @@ module AssemblyHelper =
 module Main =
     open Avalonia.FuncUI
 
-    type State = { board: Board }
+    [<Struct>]
+    type State = { Board: Board }
 
-    let init (board: Board) () = { board = board }, Cmd.none
-
-    type Msg =
-        | Next of board: Board
-        | Noop
+    [<Struct>]
+    type Msg = Next
 
     let update (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
-        | Next board -> { state with board = board }, Cmd.none
-        | Noop -> state, Cmd.none
+        | Next ->
+#if DEBUG
+            printfn "Next generation requested. Current generation: %d" state.Board.Generation
+#endif
+            { Board = state.Board |> nextGeneration }, Cmd.none
 
-    let view (cellSize: float) (cols: int) (rows: int) (state: State) (dispatch: Msg -> unit) =
-        let width = float cols * cellSize
-        let height = float rows * cellSize
+    let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
+        let width = float state.Board.Column * cellSize
+        let height = float state.Board.Row * cellSize
 
         Canvas.create
             [ Canvas.width width
               Canvas.height height
               Canvas.children
-                  [ for i in 0 .. (rows * cols - 1) do
-                        let row = i / cols
-                        let col = i % cols
+                  [ for i in 0 .. (int state.Board.Row * int state.Board.Column - 1) do
+                        let row = i / int state.Board.Column
+                        let col = i % int state.Board.Column
 
                         let color =
-                            state.board.Cells.[row, col]
+                            state.Board.Cells.[row, col]
                             |> fun c ->
                                 match c with
                                 | Dead -> "white"
@@ -130,7 +131,20 @@ module Main =
                                   Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
                                   Canvas.left (float col * cellSize)
                                   Canvas.top (float row * cellSize)
-                                  Shapes.Rectangle.onTapped (fun _ -> state.board |> nextGeneration |> Next |> dispatch) ]
+                                  Shapes.Rectangle.onTapped (fun _ ->
+#if DEBUG
+                                      printfn "Tapped cell at (%d, %d) generation %d" col row state.Board.Generation
+#endif
+                                      Next |> dispatch
+#if DEBUG
+                                      printfn
+                                          "Exit tapped cell at (%d, %d) generation %d"
+                                          col
+                                          row
+                                          state.Board.Generation
+#endif
+
+                                  ) ]
 
                     ] ]
         |> generalize
@@ -141,16 +155,21 @@ type MainWindow(board: Board) as this =
     let cellSize = 10.0
 
     do
-        base.Title <- "Example"
+        base.Title <- "PSGameOfLife"
         base.Width <- float board.Column * cellSize
         base.Height <- float board.Row * cellSize
         base.CanResize <- false
 
-        Program.mkProgram (Main.init board) Main.update (Main.view cellSize <| int board.Column <| int board.Row)
+#if DEBUG
+        printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
+#endif
+        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.none
+
+        Program.mkProgram init Main.update (Main.view cellSize)
         |> Program.withHost this
         |> Program.run
 
-    override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e: EventArgs)
+    override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e)
 
 type App() =
     inherit Application()
