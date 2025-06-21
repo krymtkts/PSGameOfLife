@@ -31,7 +31,8 @@
   <ItemGroup>
     <Compile Include="Core.fs" />
     <Compile Include="Algorithm.fs" />
-    <Compile Include="UI.Character.fs" />
+    <Compile Include="View.Character.fs" />
+    <Compile Include="View.Avalonia.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
 
@@ -47,6 +48,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.1" />
+    <PackageReference Include="Avalonia.FuncUI" Version="1.5.1" />
+    <PackageReference Include="Avalonia.FuncUI.Elmish" Version="1.5.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.1" />
     <PackageReference Include="PowerShellStandard.Library" Version="7.0.0-preview.1">
       <ExcludeAssets>contentFiles</ExcludeAssets>
       <PrivateAssets>All</PrivateAssets>
