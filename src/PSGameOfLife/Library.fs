@@ -81,7 +81,7 @@ type StartGameOfLifeCommand() =
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Character.game screen board
             | UIMode.Gui ->
-                use screen = new View.Avalonia.Screen()
+                use screen = new View.Avalonia.Screen(50, 50)
                 let initializer = Algorithm.random __.FateRoll
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Avalonia.game screen board

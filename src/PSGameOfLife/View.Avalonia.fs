@@ -91,28 +91,22 @@ module AssemblyHelper =
 module Main =
     open Avalonia.FuncUI
 
-    type State = { swap: bool }
+    type State = { board: Board }
 
-    let init () = { swap = true }, Cmd.none
+    let init (board: Board) () = { board = board }, Cmd.none
 
     type Msg =
-        | Swap
+        | Next of board: Board
         | Noop
 
     let update (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
-        | Swap -> { state with swap = not state.swap }, Cmd.none
+        | Next board -> { state with board = board }, Cmd.none
         | Noop -> state, Cmd.none
 
-    let view (state: State) (dispatch: Msg -> unit) =
-        let cellSize = 10.0
-        let rows, cols = 50, 50
+    let view (cellSize: float) (cols: int) (rows: int) (state: State) (dispatch: Msg -> unit) =
         let width = float cols * cellSize
         let height = float rows * cellSize
-        let isAlive row col = (row + col) % 2 = 0 = state.swap
-
-        let cells =
-            Array2D.init (int height) (int width) (fun row col -> if isAlive row col then "white" else "black")
 
         Canvas.create
             [ Canvas.width width
@@ -121,7 +115,13 @@ module Main =
                   [ for i in 0 .. (rows * cols - 1) do
                         let row = i / cols
                         let col = i % cols
-                        let color = cells.[row, col]
+
+                        let color =
+                            state.board.Cells.[row, col]
+                            |> fun c ->
+                                match c with
+                                | Dead -> "white"
+                                | Live -> "black"
 
                         yield
                             Rectangle.create
@@ -130,21 +130,23 @@ module Main =
                                   Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
                                   Canvas.left (float col * cellSize)
                                   Canvas.top (float row * cellSize)
-                                  Shapes.Rectangle.onTapped (fun _ -> dispatch Swap) ] ]
+                                  Shapes.Rectangle.onTapped (fun _ -> state.board |> nextGeneration |> Next |> dispatch) ]
 
-              ]
+                    ] ]
         |> generalize
 
-type MainWindow() as this =
+type MainWindow(board: Board) as this =
     inherit HostWindow()
+
+    let cellSize = 10.0
 
     do
         base.Title <- "Example"
-        base.Height <- 500.0
-        base.Width <- 500.0
+        base.Width <- float board.Column * cellSize
+        base.Height <- float board.Row * cellSize
         base.CanResize <- false
 
-        Program.mkProgram Main.init Main.update Main.view
+        Program.mkProgram (Main.init board) Main.update (Main.view cellSize <| int board.Column <| int board.Row)
         |> Program.withHost this
         |> Program.run
 
@@ -167,7 +169,7 @@ type App() =
         | _ -> ()
 
 
-type Screen() =
+type Screen(col: int, row: int) =
     static let app =
         let app =
             let lt = new ClassicDesktopStyleApplicationLifetime()
@@ -196,8 +198,8 @@ type Screen() =
             | null -> ()
             | window -> window.Close()
 
-    member __.Column = LanguagePrimitives.Int32WithMeasure<col> 30
-    member __.Row = LanguagePrimitives.Int32WithMeasure<row> 30
+    member __.Column = LanguagePrimitives.Int32WithMeasure<col> col
+    member __.Row = LanguagePrimitives.Int32WithMeasure<row> row
 
 // let toSymbol cell =
 //     match cell with
@@ -251,7 +253,7 @@ let inline game (screen: Screen) (board: Board) =
             | :? App as app -> app
             | _ -> failwith "Application instance is not of type App."
 
-    let mainWindow = new MainWindow()
+    let mainWindow = new MainWindow(board)
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 
