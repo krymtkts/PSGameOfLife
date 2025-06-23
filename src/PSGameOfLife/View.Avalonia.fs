@@ -127,30 +127,29 @@ module Main =
         let wb =
             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
-        let data = Array.zeroCreate<byte> (width * height * 4)
-
-        state.Board.Cells
-        |> Array2D.iteri (fun y x cell ->
-            for dy = 0 to cellSize - 1 do
-                for dx = 0 to cellSize - 1 do
-                    let ix = x * cellSize + dx
-                    let iy = y * cellSize + dy
-                    let idx = (iy * width + ix) * 4
-
-                    match cell with
-                    | Dead ->
-                        data.[idx] <- 255uy // B
-                        data.[idx + 1] <- 255uy // G
-                        data.[idx + 2] <- 255uy // R
-                        data.[idx + 3] <- 255uy // A
-                    | Live ->
-                        data.[idx] <- 0uy
-                        data.[idx + 1] <- 0uy
-                        data.[idx + 2] <- 0uy
-                        data.[idx + 3] <- 255uy)
-
         use fb = wb.Lock()
-        Marshal.Copy(data, 0, fb.Address, data.Length)
+        let span = Span<byte>(fb.Address.ToPointer(), width * height * 4)
+
+        for y = 0 to Array2D.length1 state.Board.Cells - 1 do
+            for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                for dy = 0 to cellSize - 1 do
+                    for dx = 0 to cellSize - 1 do
+                        let ix = x * cellSize + dx
+                        let iy = y * cellSize + dy
+                        let idx = (iy * width + ix) * 4
+
+                        match state.Board.Cells.[y, x] with
+                        | Dead ->
+                            span.[idx] <- 255uy // B
+                            span.[idx + 1] <- 255uy // G
+                            span.[idx + 2] <- 255uy // R
+                            span.[idx + 3] <- 255uy // A
+                        | Live ->
+                            span.[idx] <- 0uy
+                            span.[idx + 1] <- 0uy
+                            span.[idx + 2] <- 0uy
+                            span.[idx + 3] <- 255uy
+
         Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
 
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
