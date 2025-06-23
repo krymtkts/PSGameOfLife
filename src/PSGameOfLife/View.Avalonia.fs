@@ -120,10 +120,9 @@ module Main =
             nextState, cmd
         | Noop -> state, Cmd.none
 
-    let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
-        let cellSizeInt = int cellSize
-        let width = int state.Board.Column * cellSizeInt
-        let height = int state.Board.Row * cellSizeInt
+    let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
+        let width = int state.Board.Column * cellSize
+        let height = int state.Board.Row * cellSize
 
         let wb =
             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
@@ -132,10 +131,10 @@ module Main =
 
         state.Board.Cells
         |> Array2D.iteri (fun y x cell ->
-            for dy = 0 to cellSizeInt - 1 do
-                for dx = 0 to cellSizeInt - 1 do
-                    let ix = x * cellSizeInt + dx
-                    let iy = y * cellSizeInt + dy
+            for dy = 0 to cellSize - 1 do
+                for dx = 0 to cellSize - 1 do
+                    let ix = x * cellSize + dx
+                    let iy = y * cellSize + dy
                     let idx = (iy * width + ix) * 4
 
                     match cell with
@@ -157,12 +156,12 @@ module Main =
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     inherit HostWindow()
 
-    let cellSize = 10.0
+    let cellSize = 10
 
     do
         base.Title <- "PSGameOfLife"
-        base.Width <- float board.Column * cellSize
-        base.Height <- float board.Row * cellSize
+        base.Width <- board.Column * cellSize |> float
+        base.Height <- board.Row * cellSize |> float
         base.CanResize <- false
 
 #if DEBUG
