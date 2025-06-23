@@ -1,11 +1,6 @@
 module PSGameOfLife.View.Avalonia
 
 open System
-// open System.IO
-
-open PSGameOfLife.Core
-
-open System
 open System.Collections
 open System.Runtime.InteropServices
 
@@ -18,6 +13,8 @@ open Avalonia.FuncUI.Hosts
 open Avalonia.Logging
 open Avalonia.Themes.Fluent
 open Elmish
+
+open PSGameOfLife.Core
 
 module AssemblyHelper =
     let getModuleDir () =
@@ -89,100 +86,96 @@ module AssemblyHelper =
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
 
 module Main =
-    open Avalonia.FuncUI
-    open Avalonia.Threading
+    open Avalonia.Media.Imaging
+    open Avalonia.Platform
 
     [<Struct>]
     type State = { Board: Board }
 
     [<Struct>]
-    type Msg = Next
+    type Msg =
+        | Next
+        | Noop
 
-    let update (msg: Msg) (state: State) : State * Cmd<_> =
+    let update (cts: Threading.CancellationTokenSource) (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
         | Next ->
-            // #if DEBUG
-            //             printfn "Next generation requested. Current generation: %d" state.Board.Generation
-            // #endif
-            { Board = state.Board |> nextGeneration }, Cmd.none
+            let nextState = { Board = state.Board |> nextGeneration }
+            let ms = int state.Board.Interval
 
-    let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
-        let width = float state.Board.Column * cellSize
-        let height = float state.Board.Row * cellSize
+            // NOTE: Using Cmd.OfAsyncImmediate for frame-driven rendering. Using DispatcherTimer will cause rendering to get stuck at a 0ms interval.
+            let cmd =
+                Cmd.OfAsyncImmediate.either
+                    (fun _ ->
+                        async {
+                            if cts.IsCancellationRequested then
+                                "Game was canceled." |> OperationCanceledException |> raise
+                            else
+                                do! Async.Sleep ms
+                        })
+                    ()
+                    (fun _ -> Next)
+                    (fun _ -> Noop)
 
-        Canvas.create
-            [ Canvas.width width
-              Canvas.height height
-              Canvas.children
-                  [ for i in 0 .. (int state.Board.Row * int state.Board.Column - 1) do
-                        let row = i / int state.Board.Column
-                        let col = i % int state.Board.Column
+            nextState, cmd
+        | Noop -> state, Cmd.none
 
-                        let color =
-                            state.Board.Cells.[row, col]
-                            |> fun c ->
-                                match c with
-                                | Dead -> "white"
-                                | Live -> "black"
+    let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
+        let width = int state.Board.Column * cellSize
+        let height = int state.Board.Row * cellSize
 
-                        yield
-                            Rectangle.create
-                                [ Shapes.Rectangle.width cellSize
-                                  Shapes.Rectangle.height cellSize
-                                  Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
-                                  Canvas.left (float col * cellSize)
-                                  Canvas.top (float row * cellSize)
-                                  //                                   Shapes.Rectangle.onTapped (fun _ ->
-                                  // #if DEBUG
-                                  //                                       printfn "Tapped cell at (%d, %d) generation %d" col row state.Board.Generation
-                                  // #endif
-                                  //                                       Next |> dispatch
-                                  // #if DEBUG
-                                  //                                       printfn
-                                  //                                           "Exit tapped cell at (%d, %d) generation %d"
-                                  //                                           col
-                                  //                                           row
-                                  //                                           state.Board.Generation
-                                  // #endif
-                                  //                                   )
+        let wb =
+            new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
-                                  ]
+        use fb = wb.Lock()
+        let span = Span<byte>(fb.Address.ToPointer(), width * height * 4)
 
-                    ] ]
-        |> generalize
+        for y = 0 to Array2D.length1 state.Board.Cells - 1 do
+            for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                for dy = 0 to cellSize - 1 do
+                    for dx = 0 to cellSize - 1 do
+                        let ix = x * cellSize + dx
+                        let iy = y * cellSize + dy
+                        let idx = (iy * width + ix) * 4
 
-    let subscriptions (ms: float) (_state: State) =
-        let timerSub (dispatch: Msg -> unit) =
-            let invoke () =
-                dispatch Next
-                true
+                        match state.Board.Cells.[y, x] with
+                        | Dead ->
+                            span.[idx] <- 255uy // B
+                            span.[idx + 1] <- 255uy // G
+                            span.[idx + 2] <- 255uy // R
+                            span.[idx + 3] <- 255uy // A
+                        | Live ->
+                            span.[idx] <- 0uy
+                            span.[idx + 1] <- 0uy
+                            span.[idx + 2] <- 0uy
+                            span.[idx + 3] <- 255uy
 
-            DispatcherTimer.Run(Func<bool>(invoke), TimeSpan.FromMilliseconds ms)
+        // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
+        Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
 
-        [ [ nameof timerSub ], timerSub ]
-
-type MainWindow(board: Board) as this =
+type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     inherit HostWindow()
 
-    let cellSize = 10.0
+    let cellSize = 10
 
     do
         base.Title <- "PSGameOfLife"
-        base.Width <- float board.Column * cellSize
-        base.Height <- float board.Row * cellSize
+        base.Width <- board.Column * cellSize |> float
+        base.Height <- board.Row * cellSize |> float
         base.CanResize <- false
 
 #if DEBUG
         printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
 #endif
-        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.none
+        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
 
-        Program.mkProgram init Main.update (Main.view cellSize)
+        Program.mkProgram init (Main.update cts) (Main.view cellSize)
         |> Program.withHost this
-        |> Program.withSubscription (Main.subscriptions <| float board.Interval)
         |> Program.run
 
-    override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e)
+    override __.OnClosed(e: EventArgs) : unit =
+        cts.Cancel()
+        base.OnClosed(e)
 
 type App() =
     inherit Application()
@@ -220,6 +213,9 @@ type Screen(col: int, row: int) =
 
     interface IDisposable with
         member __.Dispose() =
+#if DEBUG
+            printfn "Disposing Screen with size %d x %d" col row
+#endif
             let app =
                 app.Instance
                 |> function
@@ -233,47 +229,6 @@ type Screen(col: int, row: int) =
     member __.Column = LanguagePrimitives.Int32WithMeasure<col> col
     member __.Row = LanguagePrimitives.Int32WithMeasure<row> row
 
-// let toSymbol cell =
-//     match cell with
-//     | Dead -> " "
-//     | Live -> "X"
-
-// let inline render<'Screen
-//     when 'Screen: (member GetCursorPosition: unit -> int * int)
-//     and 'Screen: (member Diff: int)
-//     and 'Screen: (member Write: string -> unit)
-//     and 'Screen: (member WriteLine: string -> unit)
-//     and 'Screen: (member EmptyWriteLine: unit -> unit)
-//     and 'Screen: (member Flush: unit -> unit)
-//     and 'Screen: (member SetCursorPosition: int * int -> unit)>
-//     (screen: 'Screen)
-//     (board: Board)
-//     =
-//     let pos = screen.GetCursorPosition()
-//     let info = $"#Press Q to quit. Board: %d{board.Width} x %d{board.Height}"
-// #if DEBUG
-//     // NOTE: additional info for debugging.
-//     let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
-// #endif
-//     info |> screen.WriteLine
-
-//     $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
-//     |> screen.WriteLine
-
-//     screen.EmptyWriteLine()
-
-//     board.Cells
-//     |> Array2D.iteri (fun y x cell ->
-//         toSymbol cell
-//         |> if x + 1 < int board.Width then
-//                screen.Write
-//            else
-//                screen.WriteLine)
-
-//     screen.Flush()
-//     pos |> screen.SetCursorPosition
-
-
 [<Literal>]
 let defaultInterval = 100<ms>
 
@@ -285,19 +240,16 @@ let inline game (screen: Screen) (board: Board) =
             | :? App as app -> app
             | _ -> failwith "Application instance is not of type App."
 
-    let mainWindow = new MainWindow(board)
+    let cts = new Threading.CancellationTokenSource()
+    let mainWindow = new MainWindow(board, cts)
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 
     match app.desktopLifetime with
     | null -> failwith "Application lifetime is not set."
     | desktopLifetime ->
-        desktopLifetime.MainWindow <- app.mainWindow
+        desktopLifetime.MainWindow <- mainWindow
         desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
-
-    let cts = new Threading.CancellationTokenSource()
-
-    mainWindow.Closed.Add(fun _ -> cts.Cancel())
 
     mainWindow.Show()
     app.Run(cts.Token)
