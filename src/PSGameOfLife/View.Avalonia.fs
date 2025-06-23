@@ -1,11 +1,6 @@
 module PSGameOfLife.View.Avalonia
 
 open System
-// open System.IO
-
-open PSGameOfLife.Core
-
-open System
 open System.Collections
 open System.Runtime.InteropServices
 
@@ -18,6 +13,8 @@ open Avalonia.FuncUI.Hosts
 open Avalonia.Logging
 open Avalonia.Themes.Fluent
 open Elmish
+
+open PSGameOfLife.Core
 
 module AssemblyHelper =
     let getModuleDir () =
@@ -102,10 +99,14 @@ module Main =
     let update (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
         | Next ->
-            // #if DEBUG
-            //             printfn "Next generation requested. Current generation: %d" state.Board.Generation
-            // #endif
-            { Board = state.Board |> nextGeneration }, Cmd.none
+            let nextState = { Board = state.Board |> nextGeneration }
+            let ms = int state.Board.Interval
+
+            // NOTE: Using Cmd.OfAsyncImmediate for frame-driven rendering. Using DispatcherTimer will cause rendering to get stuck at a 0ms interval.
+            let cmd =
+                Cmd.OfAsyncImmediate.perform (fun (ms: int) -> async { do! Async.Sleep ms }) ms (fun () -> Next)
+
+            nextState, cmd
 
     let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
         let cellSizeInt = int cellSize
@@ -141,16 +142,6 @@ module Main =
         Marshal.Copy(data, 0, fb.Address, data.Length)
         Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
 
-    let subscriptions (ms: float) (_state: State) =
-        let timerSub (dispatch: Msg -> unit) =
-            let invoke () =
-                dispatch Next
-                true
-
-            DispatcherTimer.Run(Func<bool>(invoke), TimeSpan.FromMilliseconds ms)
-
-        [ [ nameof timerSub ], timerSub ]
-
 type MainWindow(board: Board) as this =
     inherit HostWindow()
 
@@ -165,11 +156,10 @@ type MainWindow(board: Board) as this =
 #if DEBUG
         printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
 #endif
-        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.none
+        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
 
         Program.mkProgram init Main.update (Main.view cellSize)
         |> Program.withHost this
-        |> Program.withSubscription (Main.subscriptions <| float board.Interval)
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e)
