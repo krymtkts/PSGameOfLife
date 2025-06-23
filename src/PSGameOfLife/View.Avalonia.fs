@@ -150,6 +150,7 @@ module Main =
                             span.[idx + 2] <- 0uy
                             span.[idx + 3] <- 255uy
 
+        // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
         Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
 
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
