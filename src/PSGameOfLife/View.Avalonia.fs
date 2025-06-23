@@ -89,8 +89,9 @@ module AssemblyHelper =
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
 
 module Main =
-    open Avalonia.FuncUI
+    open Avalonia.Media.Imaging
     open Avalonia.Threading
+    open Avalonia.Platform
 
     [<Struct>]
     type State = { Board: Board }
@@ -107,49 +108,38 @@ module Main =
             { Board = state.Board |> nextGeneration }, Cmd.none
 
     let view (cellSize: float) (state: State) (dispatch: Msg -> unit) =
-        let width = float state.Board.Column * cellSize
-        let height = float state.Board.Row * cellSize
+        let cellSizeInt = int cellSize
+        let width = int state.Board.Column * cellSizeInt
+        let height = int state.Board.Row * cellSizeInt
 
-        Canvas.create
-            [ Canvas.width width
-              Canvas.height height
-              Canvas.children
-                  [ for i in 0 .. (int state.Board.Row * int state.Board.Column - 1) do
-                        let row = i / int state.Board.Column
-                        let col = i % int state.Board.Column
+        let wb =
+            new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
-                        let color =
-                            state.Board.Cells.[row, col]
-                            |> fun c ->
-                                match c with
-                                | Dead -> "white"
-                                | Live -> "black"
+        let data = Array.zeroCreate<byte> (width * height * 4)
 
-                        yield
-                            Rectangle.create
-                                [ Shapes.Rectangle.width cellSize
-                                  Shapes.Rectangle.height cellSize
-                                  Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
-                                  Canvas.left (float col * cellSize)
-                                  Canvas.top (float row * cellSize)
-                                  //                                   Shapes.Rectangle.onTapped (fun _ ->
-                                  // #if DEBUG
-                                  //                                       printfn "Tapped cell at (%d, %d) generation %d" col row state.Board.Generation
-                                  // #endif
-                                  //                                       Next |> dispatch
-                                  // #if DEBUG
-                                  //                                       printfn
-                                  //                                           "Exit tapped cell at (%d, %d) generation %d"
-                                  //                                           col
-                                  //                                           row
-                                  //                                           state.Board.Generation
-                                  // #endif
-                                  //                                   )
+        state.Board.Cells
+        |> Array2D.iteri (fun y x cell ->
+            for dy = 0 to cellSizeInt - 1 do
+                for dx = 0 to cellSizeInt - 1 do
+                    let ix = x * cellSizeInt + dx
+                    let iy = y * cellSizeInt + dy
+                    let idx = (iy * width + ix) * 4
 
-                                  ]
+                    match cell with
+                    | Dead ->
+                        data.[idx] <- 255uy // B
+                        data.[idx + 1] <- 255uy // G
+                        data.[idx + 2] <- 255uy // R
+                        data.[idx + 3] <- 255uy // A
+                    | Live ->
+                        data.[idx] <- 0uy
+                        data.[idx + 1] <- 0uy
+                        data.[idx + 2] <- 0uy
+                        data.[idx + 3] <- 255uy)
 
-                    ] ]
-        |> generalize
+        use fb = wb.Lock()
+        Marshal.Copy(data, 0, fb.Address, data.Length)
+        Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
 
     let subscriptions (ms: float) (_state: State) =
         let timerSub (dispatch: Msg -> unit) =
