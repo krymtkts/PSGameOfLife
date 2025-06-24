@@ -163,7 +163,7 @@ module Main =
                     // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
                     Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
 
-type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
+type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit HostWindow()
 
     let cellSize = 10
@@ -180,7 +180,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
         let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
 
         Program.mkProgram init (Main.update cts) (Main.view cellSize)
-        |> Program.withHost this
+        |> Program.withHost __
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit =
