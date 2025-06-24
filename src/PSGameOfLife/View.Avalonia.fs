@@ -177,6 +177,11 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
         cts.Cancel()
         base.OnClosed(e)
 
+    override __.OnKeyDown(e: Input.KeyEventArgs) : unit =
+        match e.Key with
+        | Input.Key.Q -> __.Close(e)
+        | _ -> ()
+
 type App() =
     inherit Application()
 
