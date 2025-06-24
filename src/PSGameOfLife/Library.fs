@@ -5,35 +5,6 @@ open System.Management.Automation
 
 [<AutoOpen>]
 module Data =
-    open System.Collections
-    open Microsoft.FSharp.Reflection
-
-    let generateArrayOfDu aType = FSharpType.GetUnionCases aType
-
-    let makeUnion<'DU> (u: UnionCaseInfo) = FSharpValue.MakeUnion(u, [||]) :?> 'DU
-
-    let generateDictOfDu<'DU> () =
-        let dict = Generic.Dictionary<string, 'DU> StringComparer.InvariantCultureIgnoreCase
-
-        generateArrayOfDu typeof<'DU>
-        |> Array.fold
-            (fun (acc: Generic.Dictionary<string, 'DU>) u ->
-                acc.Add(u.Name, makeUnion<'DU> u)
-                acc)
-            dict
-
-    let tryGetDu (dict: Generic.Dictionary<string, 'DU>) s =
-        let aType: Type = typeof<'DU>
-
-        match dict.TryGetValue s with
-        | true, du -> Ok du
-        | _ -> Error <| $"Unknown %s{aType.Name} '%s{s}'."
-
-    let private fromString<'DU> (dict: Generic.Dictionary<string, 'DU>) s =
-        tryGetDu dict s
-        |> function
-            | Ok x -> x
-            | Error e -> failwith e
 
     [<RequireQualifiedAccess>]
     [<NoEquality>]
@@ -45,35 +16,45 @@ module Data =
 
     [<RequireQualifiedAccess>]
     module UIMode =
-        let fromString = generateDictOfDu<UIMode> () |> fromString<UIMode>
+        let fromSwitch (switch: SwitchParameter) =
+            switch.IsPresent
+            |> function
+                | true -> UIMode.Gui
+                | false -> UIMode.Cui
 
-[<Cmdlet(VerbsLifecycle.Start, "GameOfLife")>]
+[<Cmdlet(VerbsLifecycle.Start, "GameOfLife", DefaultParameterSetName = "Cui")>]
+[<OutputType(typeof<unit>)>]
 type StartGameOfLifeCommand() =
     inherit Cmdlet()
 
-    // NOTE: disable board sizing for CUI.
-    // member val Width = 120 with get, set
-    // member val Height = 40 with get, set
-
     // NOTE: use for random initialization only.
-    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "Cui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "Gui")>]
     [<ValidateRange(0.1, 0.5)>]
     member val FateRoll = Algorithm.defaultFateRoll with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "Cui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "Gui")>]
     [<ValidateRange(0, 1000)>]
     member val IntervalMs = View.Character.defaultInterval with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "UI mode for the game.")>]
-    [<ValidateSet("Cui", "Gui")>]
-    member val UiMode: string = "Cui" with get, set
+    [<Parameter(Mandatory = false, HelpMessage = "GUI mode for the game.", ParameterSetName = "Gui")>]
+    member val GuiMode: SwitchParameter = SwitchParameter(false) with get, set
+
+    [<Parameter(Mandatory = false, HelpMessage = "Width for the GUI.", ParameterSetName = "Gui")>]
+    [<ValidateRange(10, 1000)>]
+    member val Width = 50 with get, set
+
+    [<Parameter(Mandatory = false, HelpMessage = "Height for the GUI.", ParameterSetName = "Gui")>]
+    [<ValidateRange(10, 1000)>]
+    member val Height = 50 with get, set
 
     override __.BeginProcessing() = ()
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
-        __.UiMode
-        |> UIMode.fromString
+        __.GuiMode
+        |> UIMode.fromSwitch
         |> function
             | UIMode.Cui ->
                 use screen = new View.Character.Screen()
@@ -81,7 +62,7 @@ type StartGameOfLifeCommand() =
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Character.game screen board
             | UIMode.Gui ->
-                use screen = new View.Avalonia.Screen(50, 50)
+                use screen = new View.Avalonia.Screen(__.Width, __.Height)
                 let initializer = Algorithm.random __.FateRoll
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Avalonia.game screen board
