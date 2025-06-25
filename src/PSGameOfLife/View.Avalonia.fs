@@ -120,6 +120,8 @@ module Main =
             nextState, cmd
         | Noop -> state, Cmd.none
 
+    let statusRowHeight = 20.0
+
     let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
@@ -155,12 +157,12 @@ module Main =
                   [ TextBlock.create
                         [ TextBlock.background "white"
                           TextBlock.foreground "black"
-                          TextBlock.height 20.0
+                          TextBlock.height statusRowHeight
                           TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
                     TextBlock.create
                         [ TextBlock.background "white"
                           TextBlock.foreground "black"
-                          TextBlock.height 20.0
+                          TextBlock.height statusRowHeight
                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
                     // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
                     Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
@@ -173,7 +175,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     do
         base.Title <- "PSGameOfLife"
         base.Width <- board.Column * cellSize |> float
-        base.Height <- board.Row * cellSize |> float |> (+) 40.0
+        base.Height <- board.Row * cellSize |> float |> (+) <| Main.statusRowHeight * 2.0
         base.CanResize <- false
 
 #if DEBUG
