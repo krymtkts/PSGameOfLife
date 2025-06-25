@@ -155,10 +155,12 @@ module Main =
                   [ TextBlock.create
                         [ TextBlock.background "white"
                           TextBlock.foreground "black"
+                          TextBlock.height 20.0
                           TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
                     TextBlock.create
                         [ TextBlock.background "white"
                           TextBlock.foreground "black"
+                          TextBlock.height 20.0
                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
                     // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
                     Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
@@ -171,7 +173,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     do
         base.Title <- "PSGameOfLife"
         base.Width <- board.Column * cellSize |> float
-        base.Height <- board.Row * cellSize |> float
+        base.Height <- board.Row * cellSize |> float |> (+) 40.0
         base.CanResize <- false
 
 #if DEBUG
