@@ -120,6 +120,8 @@ module Main =
             nextState, cmd
         | Noop -> state, Cmd.none
 
+    let statusRowHeight = 20.0
+
     let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
@@ -150,10 +152,22 @@ module Main =
                             span.[idx + 2] <- 0uy
                             span.[idx + 3] <- 255uy
 
-        // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
-        Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
+        StackPanel.create
+            [ StackPanel.children
+                  [ TextBlock.create
+                        [ TextBlock.background "white"
+                          TextBlock.foreground "black"
+                          TextBlock.height statusRowHeight
+                          TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
+                    TextBlock.create
+                        [ TextBlock.background "white"
+                          TextBlock.foreground "black"
+                          TextBlock.height statusRowHeight
+                          TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
+                    // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
+                    Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
 
-type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
+type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit HostWindow()
 
     let cellSize = 10
@@ -161,7 +175,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     do
         base.Title <- "PSGameOfLife"
         base.Width <- board.Column * cellSize |> float
-        base.Height <- board.Row * cellSize |> float
+        base.Height <- board.Row * cellSize |> float |> (+) <| Main.statusRowHeight * 2.0
         base.CanResize <- false
 
 #if DEBUG
@@ -170,12 +184,17 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
         let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
 
         Program.mkProgram init (Main.update cts) (Main.view cellSize)
-        |> Program.withHost this
+        |> Program.withHost __
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit =
         cts.Cancel()
         base.OnClosed(e)
+
+    override __.OnKeyDown(e: Input.KeyEventArgs) : unit =
+        match e.Key with
+        | Input.Key.Q -> __.Close(e)
+        | _ -> ()
 
 type App() =
     inherit Application()
