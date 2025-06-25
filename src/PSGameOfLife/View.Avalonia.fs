@@ -85,9 +85,12 @@ module AssemblyHelper =
            typeof<Win32.AngleOptions>.Assembly |]
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
 
+#nowarn "9"
+
 module Main =
     open Avalonia.Media.Imaging
     open Avalonia.Platform
+    open Microsoft.FSharp.NativeInterop
 
     [<Struct>]
     type State = { Board: Board }
@@ -122,6 +125,20 @@ module Main =
 
     let statusRowHeight = 20.0
 
+    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] =
+        let (b, g, r, a) = color
+        let bytes = Array.zeroCreate<byte> (cellSize * cellSize * 4)
+
+        for y in 0 .. cellSize - 1 do
+            for x in 0 .. cellSize - 1 do
+                let idx = (y * cellSize + x) * 4
+                bytes.[idx] <- b
+                bytes.[idx + 1] <- g
+                bytes.[idx + 2] <- r
+                bytes.[idx + 3] <- a
+
+        bytes
+
     let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
@@ -130,27 +147,36 @@ module Main =
             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
         use fb = wb.Lock()
-        let span = Span<byte>(fb.Address.ToPointer(), width * height * 4)
+        let dstPtr = fb.Address.ToPointer()
+        let liveTemplate = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+        let deadTemplate = createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
+        let liveHandle = GCHandle.Alloc(liveTemplate, GCHandleType.Pinned)
+        let deadHandle = GCHandle.Alloc(deadTemplate, GCHandleType.Pinned)
+        let liveBasePtr = liveHandle.AddrOfPinnedObject()
+        let deadBasePtr = deadHandle.AddrOfPinnedObject()
 
         for y = 0 to Array2D.length1 state.Board.Cells - 1 do
             for x = 0 to Array2D.length2 state.Board.Cells - 1 do
                 for dy = 0 to cellSize - 1 do
-                    for dx = 0 to cellSize - 1 do
-                        let ix = x * cellSize + dx
-                        let iy = y * cellSize + dy
-                        let idx = (iy * width + ix) * 4
-
+                    let basePtr =
                         match state.Board.Cells.[y, x] with
-                        | Dead ->
-                            span.[idx] <- 255uy // B
-                            span.[idx + 1] <- 255uy // G
-                            span.[idx + 2] <- 255uy // R
-                            span.[idx + 3] <- 255uy // A
-                        | Live ->
-                            span.[idx] <- 0uy
-                            span.[idx + 1] <- 0uy
-                            span.[idx + 2] <- 0uy
-                            span.[idx + 3] <- 255uy
+                        | Live -> liveBasePtr
+                        | Dead -> deadBasePtr
+
+                    let dstOffset = ((y * cellSize + dy) * width + x * cellSize) * 4
+                    let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
+                    let srcOffset = dy * cellSize * 4
+                    let srcPtr = basePtr + nativeint srcOffset
+
+                    Buffer.MemoryCopy(
+                        srcPtr.ToPointer(),
+                        NativePtr.toVoidPtr dstLinePtr,
+                        int64 (cellSize * 4),
+                        int64 (cellSize * 4)
+                    )
+
+        liveHandle.Free()
+        deadHandle.Free()
 
         StackPanel.create
             [ StackPanel.children
