@@ -159,7 +159,30 @@ module Main =
 
         bytes
 
-    let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
+    [<Struct>]
+    type Templates =
+        { LivePtr: voidptr
+          DeadPtr: voidptr
+          Terminator: State -> unit }
+
+    let initCellTemplates cellSize : Templates =
+        let liveTemplate = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+        let deadTemplate = createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
+        let liveHandle = GCHandle.Alloc(liveTemplate, GCHandleType.Pinned)
+        let deadHandle = GCHandle.Alloc(deadTemplate, GCHandleType.Pinned)
+        let livePtr = liveHandle.AddrOfPinnedObject().ToPointer()
+        let deadPtr = deadHandle.AddrOfPinnedObject().ToPointer()
+
+        let terminator _ =
+            liveHandle.Free()
+            deadHandle.Free()
+
+        // NOTE: Using tuple occurs an invalid instantiation error.
+        { LivePtr = livePtr
+          DeadPtr = deadPtr
+          Terminator = terminator }
+
+    let view (cellSize: int) (livePtr: voidptr) (deadPtr: voidptr) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
 
@@ -168,12 +191,6 @@ module Main =
 
         use fb = wb.Lock()
         let dstPtr = fb.Address.ToPointer()
-        let liveTemplate = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
-        let deadTemplate = createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
-        let liveHandle = GCHandle.Alloc(liveTemplate, GCHandleType.Pinned)
-        let deadHandle = GCHandle.Alloc(deadTemplate, GCHandleType.Pinned)
-        let liveBasePtr = liveHandle.AddrOfPinnedObject()
-        let deadBasePtr = deadHandle.AddrOfPinnedObject()
         let bytes = cellSize * 4 |> int64
 
         for y = 0 to Array2D.length1 state.Board.Cells - 1 do
@@ -184,17 +201,13 @@ module Main =
 
                 let srcPtr =
                     match state.Board.Cells.[y, x] with
-                    | Live -> liveBasePtr
-                    | Dead -> deadBasePtr
-                    |> _.ToPointer()
+                    | Live -> livePtr
+                    | Dead -> deadPtr
 
                 for dy = 0 to cellSize - 1 do
                     let dstOffset = ((yc + dy) * width + xc) * 4
                     let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
                     Buffer.MemoryCopy(srcPtr, NativePtr.toVoidPtr dstLinePtr, bytes, bytes)
-
-        liveHandle.Free()
-        deadHandle.Free()
 
         StackPanel.create
             [ StackPanel.children
@@ -241,9 +254,11 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
         printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
 #endif
         let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
+        let template = Main.initCellTemplates cellSize
 
-        Program.mkProgram init (Main.update cts) (Main.view cellSize)
+        Program.mkProgram init (Main.update cts) (Main.view cellSize template.LivePtr template.DeadPtr)
         |> Program.withHost __
+        |> Program.withTermination (fun _ -> false) template.Terminator
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit =
@@ -252,7 +267,11 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
 
     override __.OnKeyDown(e: Input.KeyEventArgs) : unit =
         match e.Key with
-        | Input.Key.Q -> __.Close(e)
+        | Input.Key.Q ->
+#if DEBUG
+            printfn "Quitting PSGameOfLife."
+#endif
+            __.Close(e)
         | _ -> ()
 
 type App() =
