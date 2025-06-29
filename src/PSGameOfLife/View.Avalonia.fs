@@ -87,6 +87,27 @@ module AssemblyHelper =
 
 #nowarn "9"
 
+#if DEBUG
+module FpsCounter =
+    let mutable lastTime = DateTime.UtcNow
+    let mutable frameCount = 0
+    let mutable fps = 0.0
+
+    let tick () =
+        let now = DateTime.UtcNow
+        frameCount <- frameCount + 1
+        let elapsed = (now - lastTime).TotalSeconds
+
+        if elapsed >= 1.0 then
+            fps <- float frameCount / elapsed
+            frameCount <- 0
+            lastTime <- now
+
+    let get () =
+        tick ()
+        fps
+#endif
+
 module Main =
     open Avalonia.Media.Imaging
     open Avalonia.Platform
@@ -187,8 +208,23 @@ module Main =
                           TextBlock.foreground "black"
                           TextBlock.height statusRowHeight
                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
-                    // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
-                    Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
+                    Canvas.create
+                        [ Canvas.width (float width)
+                          Canvas.height (float height)
+                          Canvas.children (
+                              [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
+#if DEBUG
+                                // NOTE: Debug overlay shows FPS.
+                                TextBlock.create
+                                    [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
+                                      TextBlock.background "#80000000"
+                                      TextBlock.foreground "yellow"
+                                      Canvas.top 0.0
+                                      Canvas.right 0.0
+                                      TextBlock.zIndex 100 ]
+#endif
+                                ]
+                          ) ] ] ]
 
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit HostWindow()
