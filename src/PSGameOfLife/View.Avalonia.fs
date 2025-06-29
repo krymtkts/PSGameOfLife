@@ -126,16 +126,15 @@ module Main =
     let statusRowHeight = 20.0
 
     let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] =
-        let (b, g, r, a) = color
-        let bytes = Array.zeroCreate<byte> (cellSize * cellSize * 4)
+        let b, g, r, a = color
+        let bytes = Array.zeroCreate<byte> (cellSize * 4)
 
-        for y in 0 .. cellSize - 1 do
-            for x in 0 .. cellSize - 1 do
-                let idx = (y * cellSize + x) * 4
-                bytes.[idx] <- b
-                bytes.[idx + 1] <- g
-                bytes.[idx + 2] <- r
-                bytes.[idx + 3] <- a
+        for x in 0 .. cellSize - 1 do
+            let idx = x * 4
+            bytes.[idx] <- b
+            bytes.[idx + 1] <- g
+            bytes.[idx + 2] <- r
+            bytes.[idx + 3] <- a
 
         bytes
 
@@ -154,26 +153,24 @@ module Main =
         let deadHandle = GCHandle.Alloc(deadTemplate, GCHandleType.Pinned)
         let liveBasePtr = liveHandle.AddrOfPinnedObject()
         let deadBasePtr = deadHandle.AddrOfPinnedObject()
+        let bytes = cellSize * 4 |> int64
 
         for y = 0 to Array2D.length1 state.Board.Cells - 1 do
+            let yc = y * cellSize
+
             for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                let xc = x * cellSize
+
+                let srcPtr =
+                    match state.Board.Cells.[y, x] with
+                    | Live -> liveBasePtr
+                    | Dead -> deadBasePtr
+                    |> _.ToPointer()
+
                 for dy = 0 to cellSize - 1 do
-                    let basePtr =
-                        match state.Board.Cells.[y, x] with
-                        | Live -> liveBasePtr
-                        | Dead -> deadBasePtr
-
-                    let dstOffset = ((y * cellSize + dy) * width + x * cellSize) * 4
+                    let dstOffset = ((yc + dy) * width + xc) * 4
                     let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-                    let srcOffset = dy * cellSize * 4
-                    let srcPtr = basePtr + nativeint srcOffset
-
-                    Buffer.MemoryCopy(
-                        srcPtr.ToPointer(),
-                        NativePtr.toVoidPtr dstLinePtr,
-                        int64 (cellSize * 4),
-                        int64 (cellSize * 4)
-                    )
+                    Buffer.MemoryCopy(srcPtr, NativePtr.toVoidPtr dstLinePtr, bytes, bytes)
 
         liveHandle.Free()
         deadHandle.Free()
