@@ -87,7 +87,7 @@ module AssemblyHelper =
 
 #nowarn "9"
 
-#if DEBUG
+#if DEBUG || SHOW_FPS
 module FpsCounter =
     let mutable lastTime = DateTime.UtcNow
     let mutable frameCount = 0
@@ -109,6 +109,8 @@ module FpsCounter =
 #endif
 
 module Main =
+    open System.Numerics
+    open System.Runtime.CompilerServices
     open Avalonia.Media.Imaging
     open Avalonia.Platform
     open Microsoft.FSharp.NativeInterop
@@ -148,7 +150,7 @@ module Main =
 
     let statusRowHeight = 20.0
 
-    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] =
+    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] * Vector<byte>[] * int =
         let b, g, r, a = color
         let bytes = Array.zeroCreate<byte> (cellSize * 4)
 
@@ -159,32 +161,43 @@ module Main =
             bytes.[idx + 2] <- r
             bytes.[idx + 3] <- a
 
-        bytes
+        let vsize = Vector<byte>.Count
+        let nvec = bytes.Length / vsize
+        let rem = bytes.Length % vsize
+        let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vsize))
+        bytes, vectors, rem
 
     [<Struct>]
     type Templates =
-        { LivePtr: voidptr
-          DeadPtr: voidptr
-          Terminator: State -> unit }
+        { LiveBytes: byte[]
+          LiveVectors: Vector<byte>[]
+          DeadBytes: byte[]
+          DeadVectors: Vector<byte>[] }
+
+    let vectorSize = Vector<byte>.Count
 
     let initCellTemplates cellSize : Templates =
-        let liveTemplate = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
-        let deadTemplate = createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
-        let liveHandle = GCHandle.Alloc(liveTemplate, GCHandleType.Pinned)
-        let deadHandle = GCHandle.Alloc(deadTemplate, GCHandleType.Pinned)
-        let livePtr = liveHandle.AddrOfPinnedObject().ToPointer()
-        let deadPtr = deadHandle.AddrOfPinnedObject().ToPointer()
+        let liveBytes, liveVectors, liveRem =
+            createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
 
-        let terminator _ =
-            liveHandle.Free()
-            deadHandle.Free()
+        let deadBytes, deadVectors, deadRem =
+            createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
 
-        // NOTE: Using tuple occurs an invalid instantiation error.
-        { LivePtr = livePtr
-          DeadPtr = deadPtr
-          Terminator = terminator }
+        { LiveBytes = liveBytes
+          LiveVectors = liveVectors
+          DeadBytes = deadBytes
+          DeadVectors = deadVectors }
 
-    let view (cellSize: int) (livePtr: voidptr) (deadPtr: voidptr) (state: State) (dispatch: Msg -> unit) =
+    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte>[]) (template: byte[]) =
+        let baseAddr = NativePtr.toNativeInt dst
+
+        for i = 0 to vectors.Length - 1 do
+            Unsafe.WriteUnaligned((baseAddr + nativeint (i * vectorSize)).ToPointer(), vectors.[i])
+
+        for i = vectors.Length * vectorSize to template.Length - 1 do
+            NativePtr.set dst i template.[i]
+
+    let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
 
@@ -193,7 +206,6 @@ module Main =
 
         use fb = wb.Lock()
         let dstPtr = fb.Address.ToPointer()
-        let bytes = cellSize * 4 |> int64
 
         let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
 
@@ -206,15 +218,19 @@ module Main =
                     for x = 0 to Array2D.length2 state.Board.Cells - 1 do
                         let xc = x * cellSize
 
-                        let srcPtr =
+                        let isLive =
                             match state.Board.Cells.[y, x] with
-                            | Live -> livePtr
-                            | Dead -> deadPtr
+                            | Live -> true
+                            | Dead -> false
 
                         for dy = 0 to cellSize - 1 do
                             let dstOffset = ((yc + dy) * width + xc) * 4
                             let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-                            Buffer.MemoryCopy(srcPtr, NativePtr.toVoidPtr dstLinePtr, bytes, bytes)
+
+                            if isLive then
+                                writeTemplateSIMD dstLinePtr templates.LiveVectors templates.LiveBytes
+                            else
+                                writeTemplateSIMD dstLinePtr templates.DeadVectors templates.DeadBytes
         )
         |> ignore
 
@@ -235,7 +251,7 @@ module Main =
                           Canvas.height (float height)
                           Canvas.children (
                               [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
-#if DEBUG
+#if DEBUG || SHOW_FPS
                                 // NOTE: Debug overlay shows FPS.
                                 TextBlock.create
                                     [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
@@ -265,9 +281,8 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
         let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
         let template = Main.initCellTemplates cellSize
 
-        Program.mkProgram init (Main.update cts) (Main.view cellSize template.LivePtr template.DeadPtr)
+        Program.mkProgram init (Main.update cts) (Main.view cellSize template)
         |> Program.withHost __
-        |> Program.withTermination (fun _ -> false) template.Terminator
         |> Program.run
 
     override __.OnClosed(e: EventArgs) : unit =
