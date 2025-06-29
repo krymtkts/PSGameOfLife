@@ -5,6 +5,9 @@ Properties {
     if ($DryRun -eq $null) {
         $DryRun = $true
     }
+    if ($ShowFps -eq $null) {
+        $ShowFps = $false
+    }
     $ModuleName = Get-ChildItem ./src/*/*.psd1 | Select-Object -ExpandProperty BaseName
     $ModuleSrcPath = Resolve-Path "./src/${ModuleName}/"
     $ModuleSrcProject = Resolve-Path "$ModuleSrcPath/*.fsproj"
@@ -74,7 +77,8 @@ Task Build -Depends Clean {
     if ($module.ModuleVersion -ne (Resolve-Path "./src/*/${ModuleName}.fsproj" | Select-Xml '//Version/text()').Node.Value) {
         throw 'Module manifest (.psd1) version does not match project (.fsproj) version.'
     }
-    dotnet publish $ModuleSrcPath -c $Stage
+    $definedConstants = if ($ShowFps) { '-p:DefineConstants=SHOW_FPS' } else { '' }
+    dotnet publish $ModuleSrcPath -c $Stage $definedConstants
     if (-not $?) {
         throw 'dotnet publish failed.'
     }
