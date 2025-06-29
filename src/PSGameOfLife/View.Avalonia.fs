@@ -149,6 +149,7 @@ module Main =
         | Noop -> state, Cmd.none
 
     let statusRowHeight = 20.0
+    let vectorSize = Vector<byte>.Count
 
     let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] * Vector<byte>[] * int =
         let b, g, r, a = color
@@ -161,10 +162,9 @@ module Main =
             bytes.[idx + 2] <- r
             bytes.[idx + 3] <- a
 
-        let vsize = Vector<byte>.Count
-        let nvec = bytes.Length / vsize
-        let rem = bytes.Length % vsize
-        let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vsize))
+        let nvec = bytes.Length / vectorSize
+        let rem = bytes.Length % vectorSize
+        let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
         bytes, vectors, rem
 
     [<Struct>]
@@ -173,8 +173,6 @@ module Main =
           LiveVectors: Vector<byte>[]
           DeadBytes: byte[]
           DeadVectors: Vector<byte>[] }
-
-    let vectorSize = Vector<byte>.Count
 
     let initCellTemplates cellSize : Templates =
         let liveBytes, liveVectors, liveRem =
@@ -194,8 +192,14 @@ module Main =
         for i = 0 to vectors.Length - 1 do
             Unsafe.WriteUnaligned((baseAddr + nativeint (i * vectorSize)).ToPointer(), vectors.[i])
 
-        for i = vectors.Length * vectorSize to template.Length - 1 do
-            NativePtr.set dst i template.[i]
+        let offset = vectors.Length * vectorSize
+        let rem = template.Length - offset
+
+        if rem > 0 then
+            let dstRemPtr = NativePtr.add dst offset
+            // NOTE: pinning the template array to avoid GC moving it.
+            use ptr = fixed &template.[offset]
+            Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
 
     let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
@@ -218,19 +222,15 @@ module Main =
                     for x = 0 to Array2D.length2 state.Board.Cells - 1 do
                         let xc = x * cellSize
 
-                        let isLive =
+                        let vectors, bytes =
                             match state.Board.Cells.[y, x] with
-                            | Live -> true
-                            | Dead -> false
+                            | Live -> templates.LiveVectors, templates.LiveBytes
+                            | Dead -> templates.DeadVectors, templates.DeadBytes
 
                         for dy = 0 to cellSize - 1 do
                             let dstOffset = ((yc + dy) * width + xc) * 4
                             let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-
-                            if isLive then
-                                writeTemplateSIMD dstLinePtr templates.LiveVectors templates.LiveBytes
-                            else
-                                writeTemplateSIMD dstLinePtr templates.DeadVectors templates.DeadBytes
+                            writeTemplateSIMD dstLinePtr vectors bytes
         )
         |> ignore
 
