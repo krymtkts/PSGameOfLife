@@ -112,6 +112,8 @@ module Main =
     open Avalonia.Media.Imaging
     open Avalonia.Platform
     open Microsoft.FSharp.NativeInterop
+    open System.Threading.Tasks
+    open System.Collections.Concurrent
 
     [<Struct>]
     type State = { Board: Board }
@@ -193,21 +195,28 @@ module Main =
         let dstPtr = fb.Address.ToPointer()
         let bytes = cellSize * 4 |> int64
 
-        for y = 0 to Array2D.length1 state.Board.Cells - 1 do
-            let yc = y * cellSize
+        let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
 
-            for x = 0 to Array2D.length2 state.Board.Cells - 1 do
-                let xc = x * cellSize
+        Parallel.ForEach(
+            partitioner,
+            fun (startIdx, endIdx) ->
+                for y = startIdx to endIdx - 1 do
+                    let yc = y * cellSize
 
-                let srcPtr =
-                    match state.Board.Cells.[y, x] with
-                    | Live -> livePtr
-                    | Dead -> deadPtr
+                    for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                        let xc = x * cellSize
 
-                for dy = 0 to cellSize - 1 do
-                    let dstOffset = ((yc + dy) * width + xc) * 4
-                    let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-                    Buffer.MemoryCopy(srcPtr, NativePtr.toVoidPtr dstLinePtr, bytes, bytes)
+                        let srcPtr =
+                            match state.Board.Cells.[y, x] with
+                            | Live -> livePtr
+                            | Dead -> deadPtr
+
+                        for dy = 0 to cellSize - 1 do
+                            let dstOffset = ((yc + dy) * width + xc) * 4
+                            let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
+                            Buffer.MemoryCopy(srcPtr, NativePtr.toVoidPtr dstLinePtr, bytes, bytes)
+        )
+        |> ignore
 
         StackPanel.create
             [ StackPanel.children
