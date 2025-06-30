@@ -151,7 +151,7 @@ module Main =
     let statusRowHeight = 20.0
     let vectorSize = Vector<byte>.Count
 
-    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte[] * Vector<byte>[] * int =
+    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array * int =
         let b, g, r, a = color
         let bytes = Array.zeroCreate<byte> (cellSize * 4)
 
@@ -169,10 +169,10 @@ module Main =
 
     [<Struct>]
     type Templates =
-        { LiveBytes: byte[]
-          LiveVectors: Vector<byte>[]
-          DeadBytes: byte[]
-          DeadVectors: Vector<byte>[] }
+        { LiveBytes: byte array
+          LiveVectors: Vector<byte> array
+          DeadBytes: byte array
+          DeadVectors: Vector<byte> array }
 
     let initCellTemplates cellSize : Templates =
         let liveBytes, liveVectors, liveRem =
@@ -186,7 +186,7 @@ module Main =
           DeadBytes = deadBytes
           DeadVectors = deadVectors }
 
-    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte>[]) (template: byte[]) =
+    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (template: byte array) =
         let baseAddr = NativePtr.toNativeInt dst
 
         for i = 0 to vectors.Length - 1 do
