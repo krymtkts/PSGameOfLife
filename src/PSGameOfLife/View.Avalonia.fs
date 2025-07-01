@@ -85,9 +85,37 @@ module AssemblyHelper =
            typeof<Win32.AngleOptions>.Assembly |]
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
 
+#nowarn "9"
+
+#if DEBUG || SHOW_FPS
+module FpsCounter =
+    let mutable lastTime = DateTime.UtcNow
+    let mutable frameCount = 0
+    let mutable fps = 0.0
+
+    let tick () =
+        let now = DateTime.UtcNow
+        frameCount <- frameCount + 1
+        let elapsed = (now - lastTime).TotalSeconds
+
+        if elapsed >= 1.0 then
+            fps <- float frameCount / elapsed
+            frameCount <- 0
+            lastTime <- now
+
+    let get () =
+        tick ()
+        fps
+#endif
+
 module Main =
+    open System.Numerics
+    open System.Runtime.CompilerServices
     open Avalonia.Media.Imaging
     open Avalonia.Platform
+    open Microsoft.FSharp.NativeInterop
+    open System.Threading.Tasks
+    open System.Collections.Concurrent
 
     [<Struct>]
     type State = { Board: Board }
@@ -121,8 +149,59 @@ module Main =
         | Noop -> state, Cmd.none
 
     let statusRowHeight = 20.0
+    let vectorSize = Vector<byte>.Count
 
-    let view (cellSize: int) (state: State) (dispatch: Msg -> unit) =
+    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array * int =
+        let b, g, r, a = color
+        let bytes = Array.zeroCreate<byte> (cellSize * 4)
+
+        for x in 0 .. cellSize - 1 do
+            let idx = x * 4
+            bytes.[idx] <- b
+            bytes.[idx + 1] <- g
+            bytes.[idx + 2] <- r
+            bytes.[idx + 3] <- a
+
+        let nvec = bytes.Length / vectorSize
+        let rem = bytes.Length % vectorSize
+        let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
+        bytes, vectors, rem
+
+    [<Struct>]
+    type Templates =
+        { LiveBytes: byte array
+          LiveVectors: Vector<byte> array
+          DeadBytes: byte array
+          DeadVectors: Vector<byte> array }
+
+    let initCellTemplates cellSize : Templates =
+        let liveBytes, liveVectors, liveRem =
+            createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+
+        let deadBytes, deadVectors, deadRem =
+            createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
+
+        { LiveBytes = liveBytes
+          LiveVectors = liveVectors
+          DeadBytes = deadBytes
+          DeadVectors = deadVectors }
+
+    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (template: byte array) =
+        let baseAddr = NativePtr.toNativeInt dst
+
+        for i = 0 to vectors.Length - 1 do
+            Unsafe.WriteUnaligned((baseAddr + nativeint (i * vectorSize)).ToPointer(), vectors.[i])
+
+        let offset = vectors.Length * vectorSize
+        let rem = template.Length - offset
+
+        if rem > 0 then
+            let dstRemPtr = NativePtr.add dst offset
+            // NOTE: pinning the template array to avoid GC moving it.
+            use ptr = fixed &template.[offset]
+            Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
+
+    let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
         let width = int state.Board.Column * cellSize
         let height = int state.Board.Row * cellSize
 
@@ -130,27 +209,30 @@ module Main =
             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
         use fb = wb.Lock()
-        let span = Span<byte>(fb.Address.ToPointer(), width * height * 4)
+        let dstPtr = fb.Address.ToPointer()
 
-        for y = 0 to Array2D.length1 state.Board.Cells - 1 do
-            for x = 0 to Array2D.length2 state.Board.Cells - 1 do
-                for dy = 0 to cellSize - 1 do
-                    for dx = 0 to cellSize - 1 do
-                        let ix = x * cellSize + dx
-                        let iy = y * cellSize + dy
-                        let idx = (iy * width + ix) * 4
+        let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
 
-                        match state.Board.Cells.[y, x] with
-                        | Dead ->
-                            span.[idx] <- 255uy // B
-                            span.[idx + 1] <- 255uy // G
-                            span.[idx + 2] <- 255uy // R
-                            span.[idx + 3] <- 255uy // A
-                        | Live ->
-                            span.[idx] <- 0uy
-                            span.[idx + 1] <- 0uy
-                            span.[idx + 2] <- 0uy
-                            span.[idx + 3] <- 255uy
+        Parallel.ForEach(
+            partitioner,
+            fun (startIdx, endIdx) ->
+                for y = startIdx to endIdx - 1 do
+                    let yc = y * cellSize
+
+                    for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                        let xc = x * cellSize
+
+                        let vectors, bytes =
+                            match state.Board.Cells.[y, x] with
+                            | Live -> templates.LiveVectors, templates.LiveBytes
+                            | Dead -> templates.DeadVectors, templates.DeadBytes
+
+                        for dy = 0 to cellSize - 1 do
+                            let dstOffset = ((yc + dy) * width + xc) * 4
+                            let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
+                            writeTemplateSIMD dstLinePtr vectors bytes
+        )
+        |> ignore
 
         StackPanel.create
             [ StackPanel.children
@@ -164,8 +246,23 @@ module Main =
                           TextBlock.foreground "black"
                           TextBlock.height statusRowHeight
                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
-                    // NOTE: Is there a way to force rendering while reusing the same WriteableBitmap instance?
-                    Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ] ] ]
+                    Canvas.create
+                        [ Canvas.width (float width)
+                          Canvas.height (float height)
+                          Canvas.children (
+                              [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
+#if DEBUG || SHOW_FPS
+                                // NOTE: Debug overlay shows FPS.
+                                TextBlock.create
+                                    [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
+                                      TextBlock.background "#80000000"
+                                      TextBlock.foreground "yellow"
+                                      Canvas.top 0.0
+                                      Canvas.right 0.0
+                                      TextBlock.zIndex 100 ]
+#endif
+                                ]
+                          ) ] ] ]
 
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit HostWindow()
@@ -182,8 +279,9 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
         printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
 #endif
         let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
+        let template = Main.initCellTemplates cellSize
 
-        Program.mkProgram init (Main.update cts) (Main.view cellSize)
+        Program.mkProgram init (Main.update cts) (Main.view cellSize template)
         |> Program.withHost __
         |> Program.run
 
@@ -193,7 +291,11 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
 
     override __.OnKeyDown(e: Input.KeyEventArgs) : unit =
         match e.Key with
-        | Input.Key.Q -> __.Close(e)
+        | Input.Key.Q ->
+#if DEBUG
+            printfn "Quitting PSGameOfLife."
+#endif
+            __.Close(e)
         | _ -> ()
 
 type App() =
