@@ -302,32 +302,46 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     let canvas = Canvas(Width = float width, Height = float height)
     let stack = StackPanel()
 
+    let bufferSize = width * height * 4
+    let tempBuffer: byte[] = Array.zeroCreate bufferSize
+
     let renderBoard (board: Board) (wb: WriteableBitmap) =
+        let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
+        use tempPtr = fixed &tempBuffer.[0]
+
+        do
+            Parallel.ForEach(
+                partitioner,
+                fun (startIdx, endIdx) ->
+                    for y = startIdx to endIdx - 1 do
+                        let yc = y * cellSize
+
+                        for x = 0 to Array2D.length2 board.Cells - 1 do
+                            let xc = x * cellSize
+
+                            let vectors, bytes =
+                                match board.Cells.[y, x] with
+                                | Live -> templates.LiveVectors, templates.LiveBytes
+                                | Dead -> templates.DeadVectors, templates.DeadBytes
+
+                            for dy = 0 to cellSize - 1 do
+                                let dstOffset = ((yc + dy) * width + xc) * 4
+
+                                let dstLinePtr =
+                                    NativePtr.add
+                                        (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt tempPtr))
+                                        dstOffset
+
+                                Main.writeTemplateSIMD dstLinePtr vectors bytes
+            )
+            |> ignore
+
+        // use fb = wb.Lock()
+        // System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
         use fb = wb.Lock()
-        let dstPtr = fb.Address.ToPointer()
-        let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
-
-        Parallel.ForEach(
-            partitioner,
-            fun (startIdx, endIdx) ->
-                for y = startIdx to endIdx - 1 do
-                    let yc = y * cellSize
-
-                    for x = 0 to Array2D.length2 board.Cells - 1 do
-                        let xc = x * cellSize
-
-                        let vectors, bytes =
-                            match board.Cells.[y, x] with
-                            | Live -> templates.LiveVectors, templates.LiveBytes
-                            | Dead -> templates.DeadVectors, templates.DeadBytes
-
-                        for dy = 0 to cellSize - 1 do
-                            let dstOffset = ((yc + dy) * width + xc) * 4
-                            let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-                            Main.writeTemplateSIMD dstLinePtr vectors bytes
-        )
-        |> ignore
+        // let dstPtr = fb.Address.ToPointer()
+        System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
     let updateUI board wb =
         status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
