@@ -206,6 +206,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
             )
             |> ignore
 
+        // NOTE: Parallel write to WriteableBitmap cause a deadlock. so avoid it by using a temporary buffer.
         use fb = wb.Lock()
         System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
