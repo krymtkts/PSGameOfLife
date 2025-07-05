@@ -1,25 +1,19 @@
 module PSGameOfLife.View.Avalonia
 
-open System
-open System.Collections
-open System.Runtime.InteropServices
-
 open Avalonia
 open Avalonia.Controls
 open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.Media
 open Avalonia.Media.Imaging
 open Avalonia.Platform
-open Avalonia.Threading
-open System.Threading.Tasks
-open System.Collections.Concurrent
-open Microsoft.FSharp.NativeInterop
-// open Avalonia.FuncUI.DSL
-// open Avalonia.FuncUI.Elmish
-// open Avalonia.FuncUI.Hosts
-// open Avalonia.Logging
 open Avalonia.Themes.Fluent
-// open Elmish
+open Avalonia.Threading
+open Microsoft.FSharp.NativeInterop
+open System
+open System.Collections
+open System.Collections.Concurrent
+open System.Runtime.InteropServices
+open System.Threading.Tasks
 
 open PSGameOfLife.Core
 
@@ -118,47 +112,11 @@ module FpsCounter =
 module Main =
     open System.Numerics
     open System.Runtime.CompilerServices
-    // open Avalonia.Media.Imaging
-    // open Avalonia.Platform
-    // open Microsoft.FSharp.NativeInterop
-    // open System.Threading.Tasks
-    // open System.Collections.Concurrent
-
-    // [<Struct>]
-    // type State = { Board: Board }
-
-    // [<Struct>]
-    // type Msg =
-    //     | Next
-    //     | Noop
-
-    // let update (cts: Threading.CancellationTokenSource) (msg: Msg) (state: State) : State * Cmd<_> =
-    //     match msg with
-    //     | Next ->
-    //         let nextState = { Board = state.Board |> nextGeneration }
-    //         let ms = int state.Board.Interval
-
-    //         // NOTE: Using Cmd.OfAsyncImmediate for frame-driven rendering. Using DispatcherTimer will cause rendering to get stuck at a 0ms interval.
-    //         let cmd =
-    //             Cmd.OfAsyncImmediate.either
-    //                 (fun _ ->
-    //                     async {
-    //                         if cts.IsCancellationRequested then
-    //                             "Game was canceled." |> OperationCanceledException |> raise
-    //                         else
-    //                             do! Async.Sleep ms
-    //                     })
-    //                 ()
-    //                 (fun _ -> Next)
-    //                 (fun _ -> Noop)
-
-    //         nextState, cmd
-    //     | Noop -> state, Cmd.none
 
     let statusRowHeight = 20.0
     let vectorSize = Vector<byte>.Count
 
-    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array * int =
+    let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array =
         let b, g, r, a = color
         let bytes = Array.zeroCreate<byte> (cellSize * 4)
 
@@ -170,9 +128,8 @@ module Main =
             bytes.[idx + 3] <- a
 
         let nvec = bytes.Length / vectorSize
-        let rem = bytes.Length % vectorSize
         let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
-        bytes, vectors, rem
+        bytes, vectors
 
     [<Struct>]
     type Templates =
@@ -182,10 +139,9 @@ module Main =
           DeadVectors: Vector<byte> array }
 
     let initCellTemplates cellSize : Templates =
-        let liveBytes, liveVectors, liveRem =
-            createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+        let liveBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
 
-        let deadBytes, deadVectors, deadRem =
+        let deadBytes, deadVectors =
             createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
 
         { LiveBytes = liveBytes
@@ -208,73 +164,9 @@ module Main =
             use ptr = fixed &template.[offset]
             Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
 
-//     let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
-//         let width = int state.Board.Column * cellSize
-//         let height = int state.Board.Row * cellSize
-
-//         let wb =
-//             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
-
-//         use fb = wb.Lock()
-//         let dstPtr = fb.Address.ToPointer()
-
-//         let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
-
-//         Parallel.ForEach(
-//             partitioner,
-//             fun (startIdx, endIdx) ->
-//                 for y = startIdx to endIdx - 1 do
-//                     let yc = y * cellSize
-
-//                     for x = 0 to Array2D.length2 state.Board.Cells - 1 do
-//                         let xc = x * cellSize
-
-//                         let vectors, bytes =
-//                             match state.Board.Cells.[y, x] with
-//                             | Live -> templates.LiveVectors, templates.LiveBytes
-//                             | Dead -> templates.DeadVectors, templates.DeadBytes
-
-//                         for dy = 0 to cellSize - 1 do
-//                             let dstOffset = ((yc + dy) * width + xc) * 4
-//                             let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-//                             writeTemplateSIMD dstLinePtr vectors bytes
-//         )
-//         |> ignore
-
-//         StackPanel.create
-//             [ StackPanel.children
-//                   [ TextBlock.create
-//                         [ TextBlock.background "white"
-//                           TextBlock.foreground "black"
-//                           TextBlock.height statusRowHeight
-//                           TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
-//                     TextBlock.create
-//                         [ TextBlock.background "white"
-//                           TextBlock.foreground "black"
-//                           TextBlock.height statusRowHeight
-//                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
-//                     Canvas.create
-//                         [ Canvas.width (float width)
-//                           Canvas.height (float height)
-//                           Canvas.children (
-//                               [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
-// #if DEBUG || SHOW_FPS
-//                                 // NOTE: Debug overlay shows FPS.
-//                                 TextBlock.create
-//                                     [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
-//                                       TextBlock.background "#80000000"
-//                                       TextBlock.foreground "yellow"
-//                                       Canvas.top 0.0
-//                                       Canvas.right 0.0
-//                                       TextBlock.zIndex 100 ]
-// #endif
-//                                 ]
-//                           ) ] ] ]
-
 type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     inherit Window()
     let cellSize = 10
-    // let mutable currentBoard = board
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
@@ -308,6 +200,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     let renderBoard (board: Board) (wb: WriteableBitmap) =
         let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
         use tempPtr = fixed &tempBuffer.[0]
+        let lenX = Array2D.length2 board.Cells - 1
 
         do
             Parallel.ForEach(
@@ -316,7 +209,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
                     for y = startIdx to endIdx - 1 do
                         let yc = y * cellSize
 
-                        for x = 0 to Array2D.length2 board.Cells - 1 do
+                        for x = 0 to lenX do
                             let xc = x * cellSize
 
                             let vectors, bytes =
@@ -336,17 +229,12 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
             )
             |> ignore
 
-        // use fb = wb.Lock()
-        // System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
-
         use fb = wb.Lock()
-        // let dstPtr = fb.Address.ToPointer()
         System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
     let updateUI board wb =
         status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
         status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
-        // image.Source <- renderBoard board
         renderBoard board wb
         image.InvalidateVisual()
 #if DEBUG || SHOW_FPS
