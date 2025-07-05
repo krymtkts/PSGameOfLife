@@ -7,12 +7,19 @@ open System.Runtime.InteropServices
 open Avalonia
 open Avalonia.Controls
 open Avalonia.Controls.ApplicationLifetimes
-open Avalonia.FuncUI.DSL
-open Avalonia.FuncUI.Elmish
-open Avalonia.FuncUI.Hosts
-open Avalonia.Logging
+open Avalonia.Media
+open Avalonia.Media.Imaging
+open Avalonia.Platform
+open Avalonia.Threading
+open System.Threading.Tasks
+open System.Collections.Concurrent
+open Microsoft.FSharp.NativeInterop
+// open Avalonia.FuncUI.DSL
+// open Avalonia.FuncUI.Elmish
+// open Avalonia.FuncUI.Hosts
+// open Avalonia.Logging
 open Avalonia.Themes.Fluent
-open Elmish
+// open Elmish
 
 open PSGameOfLife.Core
 
@@ -111,42 +118,42 @@ module FpsCounter =
 module Main =
     open System.Numerics
     open System.Runtime.CompilerServices
-    open Avalonia.Media.Imaging
-    open Avalonia.Platform
-    open Microsoft.FSharp.NativeInterop
-    open System.Threading.Tasks
-    open System.Collections.Concurrent
+    // open Avalonia.Media.Imaging
+    // open Avalonia.Platform
+    // open Microsoft.FSharp.NativeInterop
+    // open System.Threading.Tasks
+    // open System.Collections.Concurrent
 
-    [<Struct>]
-    type State = { Board: Board }
+    // [<Struct>]
+    // type State = { Board: Board }
 
-    [<Struct>]
-    type Msg =
-        | Next
-        | Noop
+    // [<Struct>]
+    // type Msg =
+    //     | Next
+    //     | Noop
 
-    let update (cts: Threading.CancellationTokenSource) (msg: Msg) (state: State) : State * Cmd<_> =
-        match msg with
-        | Next ->
-            let nextState = { Board = state.Board |> nextGeneration }
-            let ms = int state.Board.Interval
+    // let update (cts: Threading.CancellationTokenSource) (msg: Msg) (state: State) : State * Cmd<_> =
+    //     match msg with
+    //     | Next ->
+    //         let nextState = { Board = state.Board |> nextGeneration }
+    //         let ms = int state.Board.Interval
 
-            // NOTE: Using Cmd.OfAsyncImmediate for frame-driven rendering. Using DispatcherTimer will cause rendering to get stuck at a 0ms interval.
-            let cmd =
-                Cmd.OfAsyncImmediate.either
-                    (fun _ ->
-                        async {
-                            if cts.IsCancellationRequested then
-                                "Game was canceled." |> OperationCanceledException |> raise
-                            else
-                                do! Async.Sleep ms
-                        })
-                    ()
-                    (fun _ -> Next)
-                    (fun _ -> Noop)
+    //         // NOTE: Using Cmd.OfAsyncImmediate for frame-driven rendering. Using DispatcherTimer will cause rendering to get stuck at a 0ms interval.
+    //         let cmd =
+    //             Cmd.OfAsyncImmediate.either
+    //                 (fun _ ->
+    //                     async {
+    //                         if cts.IsCancellationRequested then
+    //                             "Game was canceled." |> OperationCanceledException |> raise
+    //                         else
+    //                             do! Async.Sleep ms
+    //                     })
+    //                 ()
+    //                 (fun _ -> Next)
+    //                 (fun _ -> Noop)
 
-            nextState, cmd
-        | Noop -> state, Cmd.none
+    //         nextState, cmd
+    //     | Noop -> state, Cmd.none
 
     let statusRowHeight = 20.0
     let vectorSize = Vector<byte>.Count
@@ -201,17 +208,107 @@ module Main =
             use ptr = fixed &template.[offset]
             Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
 
-    let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
-        let width = int state.Board.Column * cellSize
-        let height = int state.Board.Row * cellSize
+//     let view (cellSize: int) (templates: Templates) (state: State) (dispatch: Msg -> unit) =
+//         let width = int state.Board.Column * cellSize
+//         let height = int state.Board.Row * cellSize
 
-        let wb =
-            new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
+//         let wb =
+//             new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
 
+//         use fb = wb.Lock()
+//         let dstPtr = fb.Address.ToPointer()
+
+//         let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
+
+//         Parallel.ForEach(
+//             partitioner,
+//             fun (startIdx, endIdx) ->
+//                 for y = startIdx to endIdx - 1 do
+//                     let yc = y * cellSize
+
+//                     for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+//                         let xc = x * cellSize
+
+//                         let vectors, bytes =
+//                             match state.Board.Cells.[y, x] with
+//                             | Live -> templates.LiveVectors, templates.LiveBytes
+//                             | Dead -> templates.DeadVectors, templates.DeadBytes
+
+//                         for dy = 0 to cellSize - 1 do
+//                             let dstOffset = ((yc + dy) * width + xc) * 4
+//                             let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
+//                             writeTemplateSIMD dstLinePtr vectors bytes
+//         )
+//         |> ignore
+
+//         StackPanel.create
+//             [ StackPanel.children
+//                   [ TextBlock.create
+//                         [ TextBlock.background "white"
+//                           TextBlock.foreground "black"
+//                           TextBlock.height statusRowHeight
+//                           TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
+//                     TextBlock.create
+//                         [ TextBlock.background "white"
+//                           TextBlock.foreground "black"
+//                           TextBlock.height statusRowHeight
+//                           TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
+//                     Canvas.create
+//                         [ Canvas.width (float width)
+//                           Canvas.height (float height)
+//                           Canvas.children (
+//                               [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
+// #if DEBUG || SHOW_FPS
+//                                 // NOTE: Debug overlay shows FPS.
+//                                 TextBlock.create
+//                                     [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
+//                                       TextBlock.background "#80000000"
+//                                       TextBlock.foreground "yellow"
+//                                       Canvas.top 0.0
+//                                       Canvas.right 0.0
+//                                       TextBlock.zIndex 100 ]
+// #endif
+//                                 ]
+//                           ) ] ] ]
+
+type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
+    inherit Window()
+    let cellSize = 10
+    let mutable currentBoard = board
+    let templates = Main.initCellTemplates cellSize
+    let width = int board.Column * cellSize
+    let height = int board.Row * cellSize
+
+    let status1 =
+        TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
+
+    let status2 =
+        TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
+
+    let image = Image(Width = float width, Height = float height)
+
+#if DEBUG || SHOW_FPS
+    let fpsText =
+        let tb =
+            TextBlock(Foreground = Brushes.Yellow, Background = SolidColorBrush(Color.Parse("#80000000")))
+
+        Canvas.SetTop(tb, 0.0)
+        Canvas.SetRight(tb, 0.0)
+        tb.SetValue(Canvas.ZIndexProperty, 100) |> ignore
+        tb
+#else
+    let fpsText = null
+#endif
+    let canvas = Canvas(Width = float width, Height = float height)
+    let stack = StackPanel()
+
+    let wb =
+        new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
+
+    let renderBoard (board: Board) =
         use fb = wb.Lock()
         let dstPtr = fb.Address.ToPointer()
-
-        let partitioner = Partitioner.Create(0, Array2D.length1 state.Board.Cells)
+        let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
 
         Parallel.ForEach(
             partitioner,
@@ -219,84 +316,76 @@ module Main =
                 for y = startIdx to endIdx - 1 do
                     let yc = y * cellSize
 
-                    for x = 0 to Array2D.length2 state.Board.Cells - 1 do
+                    for x = 0 to Array2D.length2 board.Cells - 1 do
                         let xc = x * cellSize
 
                         let vectors, bytes =
-                            match state.Board.Cells.[y, x] with
+                            match board.Cells.[y, x] with
                             | Live -> templates.LiveVectors, templates.LiveBytes
                             | Dead -> templates.DeadVectors, templates.DeadBytes
 
                         for dy = 0 to cellSize - 1 do
                             let dstOffset = ((yc + dy) * width + xc) * 4
                             let dstLinePtr = NativePtr.add (NativePtr.ofVoidPtr<byte> dstPtr) dstOffset
-                            writeTemplateSIMD dstLinePtr vectors bytes
+                            Main.writeTemplateSIMD dstLinePtr vectors bytes
         )
         |> ignore
 
-        StackPanel.create
-            [ StackPanel.children
-                  [ TextBlock.create
-                        [ TextBlock.background "white"
-                          TextBlock.foreground "black"
-                          TextBlock.height statusRowHeight
-                          TextBlock.text $"#Press Q to quit. Board: {state.Board.Column} x {state.Board.Row}" ]
-                    TextBlock.create
-                        [ TextBlock.background "white"
-                          TextBlock.foreground "black"
-                          TextBlock.height statusRowHeight
-                          TextBlock.text $"#Generation: {state.Board.Generation, 10} Living: {state.Board.Lives, 10}" ]
-                    Canvas.create
-                        [ Canvas.width (float width)
-                          Canvas.height (float height)
-                          Canvas.children (
-                              [ Image.create [ Image.source wb; Image.width (float width); Image.height (float height) ]
+    let updateUI () =
+        status1.Text <- $"#Press Q to quit. Board: {currentBoard.Column} x {currentBoard.Row}"
+        status2.Text <- $"#Generation: {currentBoard.Generation, 10} Living: {currentBoard.Lives, 10}"
+        renderBoard currentBoard
+        image.InvalidateVisual()
 #if DEBUG || SHOW_FPS
-                                // NOTE: Debug overlay shows FPS.
-                                TextBlock.create
-                                    [ TextBlock.text $"FPS: %.2f{FpsCounter.get ()}"
-                                      TextBlock.background "#80000000"
-                                      TextBlock.foreground "yellow"
-                                      Canvas.top 0.0
-                                      Canvas.right 0.0
-                                      TextBlock.zIndex 100 ]
+        fpsText.Text <- $"FPS: %.2f{FpsCounter.get ()}"
 #endif
-                                ]
-                          ) ] ] ]
 
-type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as __ =
-    inherit HostWindow()
+    let rec loop () =
+        async {
+            if cts.IsCancellationRequested then
+                return ()
 
-    let cellSize = 10
+            currentBoard <- nextGeneration currentBoard
+
+            do!
+                Dispatcher.UIThread.InvokeAsync(fun () -> updateUI ()).GetTask()
+                |> Async.AwaitTask
+
+            do! Async.Sleep(int currentBoard.Interval)
+            return! loop ()
+        }
 
     do
-        base.Title <- "PSGameOfLife"
-        base.Width <- board.Column * cellSize |> float
-        base.Height <- board.Row * cellSize |> float |> (+) <| Main.statusRowHeight * 2.0
-        base.CanResize <- false
-
+        this.Title <- "PSGameOfLife"
+        this.Width <- float width
+        this.Height <- float height + Main.statusRowHeight * 2.0
+        this.CanResize <- false
 #if DEBUG
-        printfn "Starting PSGameOfLife with board size %d x %d" board.Column board.Row
+        printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
-        let init () : Main.State * Cmd<_> = { Board = board }, Cmd.ofMsg Main.Next
-        let template = Main.initCellTemplates cellSize
+        canvas.Children.Add(image) |> ignore
+        image.Source <- wb
 
-        Program.mkProgram init (Main.update cts) (Main.view cellSize template)
-        |> Program.withHost __
-        |> Program.run
+#if DEBUG || SHOW_FPS
+        canvas.Children.Add(fpsText) |> ignore
+#endif
+        stack.Children.Add(status1) |> ignore
+        stack.Children.Add(status2) |> ignore
+        stack.Children.Add(canvas) |> ignore
+        this.Content <- stack
+        updateUI ()
+        Async.StartImmediate(loop (), cts.Token)
 
-    override __.OnClosed(e: EventArgs) : unit =
+    override __.OnClosed(e: EventArgs) =
         cts.Cancel()
         base.OnClosed(e)
 
-    override __.OnKeyDown(e: Input.KeyEventArgs) : unit =
-        match e.Key with
-        | Input.Key.Q ->
+    override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
+        if e.Key = Avalonia.Input.Key.Q then
 #if DEBUG
             printfn "Quitting PSGameOfLife."
 #endif
-            __.Close(e)
-        | _ -> ()
+            __.Close()
 
 type App() =
     inherit Application()
