@@ -172,7 +172,7 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     let height = int board.Row * cellSize
 
     let bufferSize = width * height * 4
-    let tempBuffer: byte[] = Array.zeroCreate bufferSize
+    let tempBuffer: byte array = Array.zeroCreate bufferSize
 
     let renderBoard (board: Board) (wb: WriteableBitmap) =
         let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
