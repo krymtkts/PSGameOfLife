@@ -171,29 +171,6 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
 
-    let status1 =
-        TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
-
-    let status2 =
-        TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
-
-    let image = Image(Width = float width, Height = float height)
-
-#if DEBUG || SHOW_FPS
-    let fpsText =
-        let tb =
-            TextBlock(Foreground = Brushes.Yellow, Background = SolidColorBrush(Color.Parse("#80000000")))
-
-        Canvas.SetTop(tb, 0.0)
-        Canvas.SetRight(tb, 0.0)
-        tb.SetValue(Canvas.ZIndexProperty, 100) |> ignore
-        tb
-#else
-    let fpsText = null
-#endif
-    let canvas = Canvas(Width = float width, Height = float height)
-    let stack = StackPanel()
-
     let bufferSize = width * height * 4
     let tempBuffer: byte[] = Array.zeroCreate bufferSize
 
@@ -232,28 +209,66 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
         use fb = wb.Lock()
         System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
-    let updateUI board wb =
-        status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
-        status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
-        renderBoard board wb
-        image.InvalidateVisual()
+    let stack, updateUI =
+        let status1 =
+            TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
+
+        let status2 =
+            TextBlock(Background = Brushes.White, Foreground = Brushes.Black, Height = Main.statusRowHeight)
+
+        let image = Image(Width = float width, Height = float height)
+
+        let wb =
+            new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
+
+        image.Source <- wb
+
 #if DEBUG || SHOW_FPS
-        fpsText.Text <- $"FPS: %.2f{FpsCounter.get ()}"
+        let fpsText =
+            let tb =
+                TextBlock(Foreground = Brushes.Yellow, Background = SolidColorBrush(Color.Parse("#80000000")))
+
+            Canvas.SetTop(tb, 0.0)
+            Canvas.SetRight(tb, 0.0)
+            tb.SetValue(Canvas.ZIndexProperty, 100) |> ignore
+            tb
+#else
+        let fpsText = null
+#endif
+        let canvas = Canvas(Width = float width, Height = float height)
+        let stack = StackPanel()
+
+        status1 |> stack.Children.Add
+        status2 |> stack.Children.Add
+        image |> canvas.Children.Add
+        canvas |> stack.Children.Add
+#if DEBUG || SHOW_FPS
+        fpsText |> canvas.Children.Add
 #endif
 
+        let updateUI board =
+            status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
+            status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
+            renderBoard board wb
+            image.InvalidateVisual()
+#if DEBUG || SHOW_FPS
+            fpsText.Text <- $"FPS: %.2f{FpsCounter.get ()}"
+#endif
+        stack, updateUI
+
     [<TailCall>]
-    let rec loop board wb =
+    let rec loop board =
         async {
             if cts.IsCancellationRequested then
                 return ()
 
             do!
-                Dispatcher.UIThread.InvokeAsync(fun () -> updateUI board wb).GetTask()
+                Dispatcher.UIThread.InvokeAsync(fun () -> updateUI board).GetTask()
                 |> Async.AwaitTask
 
             do! Async.Sleep(int board.Interval)
             let currentBoard = nextGeneration board
-            return! loop currentBoard wb
+            return! loop currentBoard
         }
 
     do
@@ -261,26 +276,12 @@ type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
         this.Width <- float width
         this.Height <- float height + Main.statusRowHeight * 2.0
         this.CanResize <- false
+        this.Content <- stack
 #if DEBUG
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
-        image |> canvas.Children.Add
-        status1 |> stack.Children.Add
-        status2 |> stack.Children.Add
-        canvas |> stack.Children.Add
-#if DEBUG || SHOW_FPS
-        fpsText |> canvas.Children.Add
-#endif
 
-        this.Content <- stack
-
-        let wb =
-            new WriteableBitmap(PixelSize(width, height), Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque)
-
-        image.Source <- wb
-
-        updateUI board wb
-        Async.StartImmediate(loop board wb, cts.Token)
+        Async.StartImmediate(loop board, cts.Token)
 
     override __.OnClosed(e: EventArgs) =
         cts.Cancel()
