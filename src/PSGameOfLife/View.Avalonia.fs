@@ -164,9 +164,8 @@ module Main =
             use ptr = fixed &template.[offset]
             Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
 
-type MainWindow(board: Board, cts: Threading.CancellationTokenSource) as this =
+type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as this =
     inherit Window()
-    let cellSize = 10
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
@@ -312,7 +311,7 @@ type App() =
         | _ -> ()
 
 
-type Screen(col: int, row: int) =
+type Screen(cellSize: int, col: int, row: int) =
     static let app =
         let app =
             let lt = new ClassicDesktopStyleApplicationLifetime()
@@ -344,6 +343,7 @@ type Screen(col: int, row: int) =
             | null -> ()
             | window -> window.Close()
 
+    member __.CellSize = cellSize
     member __.Column = LanguagePrimitives.Int32WithMeasure<col> col
     member __.Row = LanguagePrimitives.Int32WithMeasure<row> row
 
@@ -359,7 +359,7 @@ let inline game (screen: Screen) (board: Board) =
             | _ -> failwith "Application instance is not of type App."
 
     let cts = new Threading.CancellationTokenSource()
-    let mainWindow = new MainWindow(board, cts)
+    let mainWindow = new MainWindow(screen.CellSize, board, cts)
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 

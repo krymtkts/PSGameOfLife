@@ -41,6 +41,10 @@ type StartGameOfLifeCommand() =
     [<Parameter(Mandatory = false, HelpMessage = "GUI mode for the game.", ParameterSetName = "Gui")>]
     member val GuiMode: SwitchParameter = SwitchParameter(false) with get, set
 
+    [<Parameter(Mandatory = false, HelpMessage = "Cell size for the GUI.", ParameterSetName = "Gui")>]
+    [<ValidateRange(1, 10)>]
+    member val CellSize = 10 with get, set
+
     [<Parameter(Mandatory = false, HelpMessage = "Width for the GUI.", ParameterSetName = "Gui")>]
     [<ValidateRange(10, 1000)>]
     member val Width = 50 with get, set
@@ -62,7 +66,7 @@ type StartGameOfLifeCommand() =
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Character.game screen board
             | UIMode.Gui ->
-                use screen = new View.Avalonia.Screen(__.Width, __.Height)
+                use screen = new View.Avalonia.Screen(__.CellSize, __.Width, __.Height)
                 let initializer = Algorithm.random __.FateRoll
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Avalonia.game screen board
