@@ -162,7 +162,12 @@ module Main =
             let dstRemPtr = NativePtr.add dst offset
             // NOTE: pinning the template array to avoid GC moving it.
             use ptr = fixed &template.[offset]
-            Buffer.MemoryCopy(ptr |> NativePtr.toVoidPtr, NativePtr.toVoidPtr dstRemPtr, int64 rem, int64 rem)
+
+            Unsafe.CopyBlockUnaligned(
+                NativePtr.toVoidPtr dstRemPtr,
+                NativePtr.toVoidPtr (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt ptr)),
+                uint32 rem
+            )
 
 type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as this =
     inherit Window()
@@ -170,44 +175,41 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
 
-    let bufferSize = width * height * 4
+    let bufferSize = width * height <<< 2
     let tempBuffer: byte array = Array.zeroCreate bufferSize
+    let partitioner = Partitioner.Create(0, int board.Row)
+    let lenX = int board.Column - 1
 
     let renderBoard (board: Board) (wb: WriteableBitmap) =
-        let partitioner = Partitioner.Create(0, Array2D.length1 board.Cells)
         use tempPtr = fixed &tempBuffer.[0]
-        let lenX = Array2D.length2 board.Cells - 1
 
-        do
-            Parallel.ForEach(
-                partitioner,
-                fun (startIdx, endIdx) ->
-                    for y = startIdx to endIdx - 1 do
-                        let yc = y * cellSize
+        Parallel.ForEach(
+            partitioner,
+            fun (startIdx, endIdx) ->
+                for y = startIdx to endIdx - 1 do
+                    let yc = y * cellSize
 
-                        for x = 0 to lenX do
-                            let xc = x * cellSize
+                    for x = 0 to lenX do
+                        let xc = x * cellSize
 
-                            let vectors, bytes =
-                                match board.Cells.[y, x] with
-                                | Live -> templates.LiveVectors, templates.LiveBytes
-                                | Dead -> templates.DeadVectors, templates.DeadBytes
+                        let vectors, bytes =
+                            match board.Cells.[y, x] with
+                            | Live -> templates.LiveVectors, templates.LiveBytes
+                            | Dead -> templates.DeadVectors, templates.DeadBytes
 
-                            for dy = 0 to cellSize - 1 do
-                                let dstOffset = ((yc + dy) * width + xc) * 4
+                        for dy = 0 to cellSize - 1 do
+                            let dstOffset = ((yc + dy) * width + xc) <<< 2
 
-                                let dstLinePtr =
-                                    NativePtr.add
-                                        (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt tempPtr))
-                                        dstOffset
+                            let dstLinePtr =
+                                NativePtr.add (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt tempPtr)) dstOffset
 
-                                Main.writeTemplateSIMD dstLinePtr vectors bytes
-            )
-            |> ignore
+                            Main.writeTemplateSIMD dstLinePtr vectors bytes
+        )
+        |> ignore
 
         // NOTE: Parallel write to WriteableBitmap cause a deadlock. so avoid it by using a temporary buffer.
         use fb = wb.Lock()
-        System.Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
+        Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
     let stack, updateUI =
         let status1 =
