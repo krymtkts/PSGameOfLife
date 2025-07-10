@@ -10,7 +10,6 @@ open Avalonia.Themes.Fluent
 open Avalonia.Threading
 open Microsoft.FSharp.NativeInterop
 open System
-open System.Collections
 open System.Collections.Concurrent
 open System.Runtime.InteropServices
 open System.Threading.Tasks
@@ -34,7 +33,7 @@ module AssemblyHelper =
         else
             failwith "Unsupported OS"
 
-    let resolver (ptrCache: Concurrent.ConcurrentDictionary<string, nativeint>) moduleDir extension =
+    let resolver (ptrCache: ConcurrentDictionary<string, nativeint>) moduleDir extension =
         let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
             let libPath =
                 let libPath =
@@ -77,7 +76,7 @@ module AssemblyHelper =
         // NOTE: those bindings cannot move out to static, it will cause a deadlock.
         let moduleDir = getModuleDir ()
         let extension = detectExtension ()
-        let cache = new Concurrent.ConcurrentDictionary<string, nativeint>()
+        let cache = new ConcurrentDictionary<string, nativeint>()
         let resolver = resolver cache moduleDir extension
 
         [| typeof<SkiaSharp.SKImageInfo>.Assembly
