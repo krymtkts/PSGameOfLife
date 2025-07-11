@@ -128,7 +128,9 @@ module Main =
 
         let nvec = bytes.Length / vectorSize
         let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
-        bytes, vectors
+        let offset = nvec * vectorSize
+        let rem = if bytes.Length > offset then bytes.[offset..] else [||]
+        rem, vectors
 
     [<Struct>]
     type Templates =
@@ -148,24 +150,23 @@ module Main =
           DeadBytes = deadBytes
           DeadVectors = deadVectors }
 
-    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (template: byte array) =
+    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (rem: byte array) =
         let baseAddr = NativePtr.toNativeInt dst
 
         for i = 0 to vectors.Length - 1 do
             Unsafe.WriteUnaligned((baseAddr + nativeint (i * vectorSize)).ToPointer(), vectors.[i])
 
         let offset = vectors.Length * vectorSize
-        let rem = template.Length - offset
 
-        if rem > 0 then
+        if rem.Length > 0 then
             let dstRemPtr = NativePtr.add dst offset
             // NOTE: pinning the template array to avoid GC moving it.
-            use ptr = fixed &template.[offset]
+            use ptr = fixed &rem.[0]
 
             Unsafe.CopyBlockUnaligned(
                 NativePtr.toVoidPtr dstRemPtr,
                 NativePtr.toVoidPtr (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt ptr)),
-                uint32 rem
+                uint32 rem.Length
             )
 
 type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as this =
