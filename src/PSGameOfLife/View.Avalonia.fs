@@ -117,7 +117,8 @@ module Main =
 
     let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array =
         let b, g, r, a = color
-        let bytes = Array.zeroCreate<byte> (cellSize * 4)
+        let byteLength = cellSize * 4
+        let bytes = Array.zeroCreate<byte> byteLength
 
         for x in 0 .. cellSize - 1 do
             let idx = x * 4
@@ -126,10 +127,10 @@ module Main =
             bytes.[idx + 2] <- r
             bytes.[idx + 3] <- a
 
-        let nvec = bytes.Length / vectorSize
+        let nvec = byteLength / vectorSize
         let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
         let offset = nvec * vectorSize
-        let rem = if bytes.Length > offset then bytes.[offset..] else [||]
+        let rem = if byteLength > offset then bytes.[offset..] else [||]
         rem, vectors
 
     [<Struct>]
