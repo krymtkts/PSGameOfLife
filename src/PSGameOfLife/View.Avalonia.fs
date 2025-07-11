@@ -117,11 +117,11 @@ module Main =
 
     let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array =
         let b, g, r, a = color
-        let byteLength = cellSize * 4
+        let byteLength = cellSize <<< 2
         let bytes = Array.zeroCreate<byte> byteLength
 
         for x in 0 .. cellSize - 1 do
-            let idx = x * 4
+            let idx = x <<< 2
             bytes.[idx] <- b
             bytes.[idx + 1] <- g
             bytes.[idx + 2] <- r
