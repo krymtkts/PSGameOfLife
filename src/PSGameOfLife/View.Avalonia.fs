@@ -135,20 +135,20 @@ module Main =
 
     [<Struct>]
     type Templates =
-        { LiveBytes: byte array
+        { LiveRemBytes: byte array
           LiveVectors: Vector<byte> array
-          DeadBytes: byte array
+          DeadRemBytes: byte array
           DeadVectors: Vector<byte> array }
 
     let initCellTemplates cellSize : Templates =
-        let liveBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+        let liveRemBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
 
-        let deadBytes, deadVectors =
+        let deadRemBytes, deadVectors =
             createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
 
-        { LiveBytes = liveBytes
+        { LiveRemBytes = liveRemBytes
           LiveVectors = liveVectors
-          DeadBytes = deadBytes
+          DeadRemBytes = deadRemBytes
           DeadVectors = deadVectors }
 
     let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (rem: byte array) =
@@ -195,8 +195,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
                         let vectors, bytes =
                             match board.Cells.[y, x] with
-                            | Live -> templates.LiveVectors, templates.LiveBytes
-                            | Dead -> templates.DeadVectors, templates.DeadBytes
+                            | Live -> templates.LiveVectors, templates.LiveRemBytes
+                            | Dead -> templates.DeadVectors, templates.DeadRemBytes
 
                         for dy = 0 to cellSize - 1 do
                             let dstOffset = ((yc + dy) * width + xc) <<< 2
