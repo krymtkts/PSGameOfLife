@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Include="Core.fs" />
     <Compile Include="Algorithm.fs" />
+    <Compile Include="Diagnostics.fs" />
     <Compile Include="View.Character.fs" />
     <Compile Include="View.Avalonia.fs" />
     <Compile Include="Library.fs" />

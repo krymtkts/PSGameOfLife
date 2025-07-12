@@ -4,6 +4,9 @@ open System
 open System.IO
 
 open PSGameOfLife.Core
+#if DEBUG || SHOW_FPS
+open PSGameOfLife.Diagnostics
+#endif
 
 type Screen() =
     [<Literal>]
@@ -100,6 +103,9 @@ let inline render<'Screen
 #if DEBUG
     // NOTE: additional info for debugging.
     let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
+#endif
+#if DEBUG || SHOW_FPS
+    let info = $"%s{info} FPS: %.2f{FpsCounter.get ()}"
 #endif
     info |> screen.WriteLine
 
