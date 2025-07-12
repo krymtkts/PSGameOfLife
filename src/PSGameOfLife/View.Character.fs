@@ -7,6 +7,10 @@ open PSGameOfLife.Core
 #if DEBUG || SHOW_FPS
 open PSGameOfLife.Diagnostics
 #endif
+#nowarn "9"
+
+open System.Collections.Concurrent
+open System.Threading.Tasks
 
 type Screen() =
     [<Literal>]
@@ -69,61 +73,60 @@ type Screen() =
             // NOTE: get_CursorPosition doesn't work on Linux, so we cannot backup the cursor position. We can only set it back to true directly.
             Console.CursorVisible <- true
 
-    member __.Write(s: string) = s |> Console.Write
-    member __.WriteLine(s: string) = s |> Console.WriteLine
-    member __.EmptyWriteLine() = Console.WriteLine()
+    member inline __.Write(s: string) = s |> Console.Write
+    member inline __.WriteLine(s: string) = s |> Console.WriteLine
+    member inline __.WriteLineCharArray(s: char array) = s |> Console.WriteLine
+    member inline __.EmptyWriteLine() = Console.WriteLine()
     member __.Flush() = writer.Flush()
-    member __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
-    member __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
-    member __.KeyAvailable() = Console.KeyAvailable
-    member __.ReadKey() = Console.ReadKey(true)
+    member inline __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
+    member inline __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
+    member inline __.KeyAvailable() = Console.KeyAvailable
+    member inline __.ReadKey() = Console.ReadKey(true)
 
     member __.Column = width
     member __.Row = height
     member __.Diff = diff
 
-let toSymbol cell =
+let inline toSymbol cell =
     match cell with
-    | Dead -> " "
-    | Live -> "X"
+    | Dead -> ' '
+    | Live -> 'X'
 
-let inline render<'Screen
-    when 'Screen: (member GetCursorPosition: unit -> int * int)
-    and 'Screen: (member Diff: int)
-    and 'Screen: (member Write: string -> unit)
-    and 'Screen: (member WriteLine: string -> unit)
-    and 'Screen: (member EmptyWriteLine: unit -> unit)
-    and 'Screen: (member Flush: unit -> unit)
-    and 'Screen: (member SetCursorPosition: int * int -> unit)>
-    (screen: 'Screen)
-    (board: Board)
-    =
-    let pos = screen.GetCursorPosition()
-    let info = $"#Press Q to quit. Board: %d{board.Column} x %d{board.Row}"
+type Renderer(screen: Screen) =
+    let partitioner = Partitioner.Create(0, int screen.Row)
+
+    let lineBuffers =
+        Array.init (int screen.Row) (fun _ -> Array.create (int screen.Column) ' ')
+
+    member __.Render(board: Board) =
+        let pos = screen.GetCursorPosition()
+        let info = $"#Press Q to quit. Board: %d{board.Column} x %d{board.Row}"
 #if DEBUG
-    // NOTE: additional info for debugging.
-    let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
+        // NOTE: additional info for debugging.
+        let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
 #endif
 #if DEBUG || SHOW_FPS
-    let info = $"%s{info} FPS: %.2f{FpsCounter.get ()}"
+        let info = $"%s{info} FPS: %.2f{FpsCounter.get ()}"
 #endif
-    info |> screen.WriteLine
+        info |> screen.WriteLine
 
-    $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
-    |> screen.WriteLine
+        $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
+        |> screen.WriteLine
 
-    screen.EmptyWriteLine()
+        screen.EmptyWriteLine()
 
-    board.Cells
-    |> Array2D.iteri (fun y x cell ->
-        toSymbol cell
-        |> if x + 1 < int board.Column then
-               screen.Write
-           else
-               screen.WriteLine)
+        Parallel.ForEach(
+            partitioner,
+            fun (startIdx, endIdx) ->
+                for y in startIdx .. endIdx - 1 do
+                    for x in 0 .. int board.Column - 1 do
+                        lineBuffers[y][x] <- toSymbol board.Cells.[y, x]
+        )
+        |> ignore
 
-    screen.Flush()
-    pos |> screen.SetCursorPosition
+        lineBuffers |> Array.iter screen.WriteLineCharArray
+        screen.Flush()
+        pos |> screen.SetCursorPosition
 
 let inline stopRequested<'Screen
     when 'Screen: (member KeyAvailable: unit -> bool) and 'Screen: (member ReadKey: unit -> ConsoleKeyInfo)>
@@ -141,9 +144,10 @@ let defaultInterval = 100<ms>
 let inline game (screen: ^Screen) (board: Board) =
     async {
         let mutable b = board
+        let r = new Renderer(screen)
 
         while not <| stopRequested screen do
-            render screen b
+            r.Render b
             do! Async.Sleep(int board.Interval)
             b <- b |> nextGeneration
     }

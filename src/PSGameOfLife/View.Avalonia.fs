@@ -163,7 +163,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
     let partitioner = Partitioner.Create(0, int board.Row)
     let lenX = int board.Column - 1
 
-    let renderBoard (board: Board) (wb: WriteableBitmap) =
+    let renderBoard (cells: Cell[,]) (wb: WriteableBitmap) =
         use tempPtr = fixed &tempBuffer.[0]
 
         Parallel.ForEach(
@@ -176,7 +176,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                         let xc = x * cellSize
 
                         let vectors, bytes =
-                            match board.Cells.[y, x] with
+                            match cells.[y, x] with
                             | Live -> templates.LiveVectors, templates.LiveRemBytes
                             | Dead -> templates.DeadVectors, templates.DeadRemBytes
 
@@ -232,7 +232,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         let updateUI board =
             status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
             status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
-            renderBoard board wb
+            renderBoard board.Cells wb
             image.InvalidateVisual()
 #if DEBUG || SHOW_FPS
             fpsText.Text <- $"FPS: %.2f{FpsCounter.get ()}"
