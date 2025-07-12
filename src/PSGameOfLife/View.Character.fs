@@ -91,7 +91,6 @@ let inline toSymbol cell =
 let inline render<'Screen
     when 'Screen: (member GetCursorPosition: unit -> int * int)
     and 'Screen: (member Diff: int)
-    and 'Screen: (member Write: string -> unit)
     and 'Screen: (member WriteLine: string -> unit)
     and 'Screen: (member WriteLineCharArray: char array -> unit)
     and 'Screen: (member EmptyWriteLine: unit -> unit)
