@@ -170,7 +170,7 @@ module Main =
                 uint32 rem.Length
             )
 
-type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as this =
+type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit Window()
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
@@ -275,11 +275,11 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         }
 
     do
-        this.Title <- "PSGameOfLife"
-        this.Width <- float width
-        this.Height <- float height + Main.statusRowHeight * 2.0
-        this.CanResize <- false
-        this.Content <- stack
+        __.Title <- "PSGameOfLife"
+        __.Width <- float width
+        __.Height <- float height + Main.statusRowHeight * 2.0
+        __.CanResize <- false
+        __.Content <- stack
 #if DEBUG
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
