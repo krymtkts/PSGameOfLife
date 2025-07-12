@@ -117,58 +117,60 @@ module Main =
 
     let createCellTemplate (cellSize: int) (color: byte * byte * byte * byte) : byte array * Vector<byte> array =
         let b, g, r, a = color
-        let bytes = Array.zeroCreate<byte> (cellSize * 4)
+        let byteLength = cellSize <<< 2
+        let bytes = Array.zeroCreate<byte> byteLength
 
         for x in 0 .. cellSize - 1 do
-            let idx = x * 4
+            let idx = x <<< 2
             bytes.[idx] <- b
             bytes.[idx + 1] <- g
             bytes.[idx + 2] <- r
             bytes.[idx + 3] <- a
 
-        let nvec = bytes.Length / vectorSize
+        let nvec = byteLength / vectorSize
         let vectors = Array.init nvec (fun i -> Vector<byte>(bytes, i * vectorSize))
-        bytes, vectors
+        let offset = nvec * vectorSize
+        let rem = if byteLength > offset then bytes.[offset..] else [||]
+        rem, vectors
 
     [<Struct>]
     type Templates =
-        { LiveBytes: byte array
+        { LiveRemBytes: byte array
           LiveVectors: Vector<byte> array
-          DeadBytes: byte array
+          DeadRemBytes: byte array
           DeadVectors: Vector<byte> array }
 
     let initCellTemplates cellSize : Templates =
-        let liveBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
+        let liveRemBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
 
-        let deadBytes, deadVectors =
+        let deadRemBytes, deadVectors =
             createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
 
-        { LiveBytes = liveBytes
+        { LiveRemBytes = liveRemBytes
           LiveVectors = liveVectors
-          DeadBytes = deadBytes
+          DeadRemBytes = deadRemBytes
           DeadVectors = deadVectors }
 
-    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (template: byte array) =
+    let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (rem: byte array) =
         let baseAddr = NativePtr.toNativeInt dst
 
         for i = 0 to vectors.Length - 1 do
             Unsafe.WriteUnaligned((baseAddr + nativeint (i * vectorSize)).ToPointer(), vectors.[i])
 
         let offset = vectors.Length * vectorSize
-        let rem = template.Length - offset
 
-        if rem > 0 then
+        if rem.Length > 0 then
             let dstRemPtr = NativePtr.add dst offset
             // NOTE: pinning the template array to avoid GC moving it.
-            use ptr = fixed &template.[offset]
+            use ptr = fixed &rem.[0]
 
             Unsafe.CopyBlockUnaligned(
                 NativePtr.toVoidPtr dstRemPtr,
                 NativePtr.toVoidPtr (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt ptr)),
-                uint32 rem
+                uint32 rem.Length
             )
 
-type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as this =
+type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit Window()
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
@@ -193,8 +195,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
                         let vectors, bytes =
                             match board.Cells.[y, x] with
-                            | Live -> templates.LiveVectors, templates.LiveBytes
-                            | Dead -> templates.DeadVectors, templates.DeadBytes
+                            | Live -> templates.LiveVectors, templates.LiveRemBytes
+                            | Dead -> templates.DeadVectors, templates.DeadRemBytes
 
                         for dy = 0 to cellSize - 1 do
                             let dstOffset = ((yc + dy) * width + xc) <<< 2
@@ -233,8 +235,6 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
             Canvas.SetRight(tb, 0.0)
             tb.SetValue(Canvas.ZIndexProperty, 100) |> ignore
             tb
-#else
-        let fpsText = null
 #endif
         let canvas = Canvas(Width = float width, Height = float height)
         let stack = StackPanel()
@@ -273,11 +273,11 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         }
 
     do
-        this.Title <- "PSGameOfLife"
-        this.Width <- float width
-        this.Height <- float height + Main.statusRowHeight * 2.0
-        this.CanResize <- false
-        this.Content <- stack
+        __.Title <- "PSGameOfLife"
+        __.Width <- float width
+        __.Height <- float height + Main.statusRowHeight * 2.0
+        __.CanResize <- false
+        __.Content <- stack
 #if DEBUG
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
