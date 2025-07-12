@@ -15,6 +15,11 @@ open System.Runtime.InteropServices
 open System.Threading.Tasks
 
 open PSGameOfLife.Core
+#if DEBUG || SHOW_FPS
+open PSGameOfLife.Diagnostics
+#endif
+
+#nowarn "9"
 
 module AssemblyHelper =
     let getModuleDir () =
@@ -84,29 +89,6 @@ module AssemblyHelper =
            typeof<AppBuilder>.Assembly
            typeof<Win32.AngleOptions>.Assembly |]
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
-
-#nowarn "9"
-
-#if DEBUG || SHOW_FPS
-module FpsCounter =
-    let mutable lastTime = DateTime.UtcNow
-    let mutable frameCount = 0
-    let mutable fps = 0.0
-
-    let tick () =
-        let now = DateTime.UtcNow
-        frameCount <- frameCount + 1
-        let elapsed = (now - lastTime).TotalSeconds
-
-        if elapsed >= 1.0 then
-            fps <- float frameCount / elapsed
-            frameCount <- 0
-            lastTime <- now
-
-    let get () =
-        tick ()
-        fps
-#endif
 
 module Main =
     open System.Numerics
