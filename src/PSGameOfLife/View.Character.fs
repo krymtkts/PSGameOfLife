@@ -71,6 +71,7 @@ type Screen() =
 
     member __.Write(s: string) = s |> Console.Write
     member __.WriteLine(s: string) = s |> Console.WriteLine
+    member __.WriteLineCharArray(s: char array) = s |> Console.WriteLine
     member __.EmptyWriteLine() = Console.WriteLine()
     member __.Flush() = writer.Flush()
     member __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
@@ -82,16 +83,17 @@ type Screen() =
     member __.Row = height
     member __.Diff = diff
 
-let toSymbol cell =
+let inline toSymbol cell =
     match cell with
-    | Dead -> " "
-    | Live -> "X"
+    | Dead -> ' '
+    | Live -> 'X'
 
 let inline render<'Screen
     when 'Screen: (member GetCursorPosition: unit -> int * int)
     and 'Screen: (member Diff: int)
     and 'Screen: (member Write: string -> unit)
     and 'Screen: (member WriteLine: string -> unit)
+    and 'Screen: (member WriteLineCharArray: char array -> unit)
     and 'Screen: (member EmptyWriteLine: unit -> unit)
     and 'Screen: (member Flush: unit -> unit)
     and 'Screen: (member SetCursorPosition: int * int -> unit)>
@@ -114,13 +116,9 @@ let inline render<'Screen
 
     screen.EmptyWriteLine()
 
-    board.Cells
-    |> Array2D.iteri (fun y x cell ->
-        toSymbol cell
-        |> if x + 1 < int board.Column then
-               screen.Write
-           else
-               screen.WriteLine)
+    for y in 0 .. int board.Row - 1 do
+        [| for x in 0 .. int board.Column - 1 -> toSymbol board.Cells.[y, x] |]
+        |> screen.WriteLineCharArray
 
     screen.Flush()
     pos |> screen.SetCursorPosition
