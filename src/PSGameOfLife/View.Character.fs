@@ -2,11 +2,16 @@ module PSGameOfLife.View.Character
 
 open System
 open System.IO
+open Microsoft.FSharp.NativeInterop
 
 open PSGameOfLife.Core
 #if DEBUG || SHOW_FPS
 open PSGameOfLife.Diagnostics
 #endif
+#nowarn "9"
+
+open System.Collections.Concurrent
+open System.Threading.Tasks
 
 type Screen() =
     [<Literal>]
@@ -88,39 +93,41 @@ let inline toSymbol cell =
     | Dead -> ' '
     | Live -> 'X'
 
-let inline render<'Screen
-    when 'Screen: (member GetCursorPosition: unit -> int * int)
-    and 'Screen: (member Diff: int)
-    and 'Screen: (member WriteLine: string -> unit)
-    and 'Screen: (member WriteLineCharArray: char array -> unit)
-    and 'Screen: (member EmptyWriteLine: unit -> unit)
-    and 'Screen: (member Flush: unit -> unit)
-    and 'Screen: (member SetCursorPosition: int * int -> unit)>
-    (screen: 'Screen)
-    (board: Board)
-    =
-    let pos = screen.GetCursorPosition()
-    let info = $"#Press Q to quit. Board: %d{board.Column} x %d{board.Row}"
+type Renderer(screen: Screen) =
+    let partitioner = Partitioner.Create(0, int screen.Row)
+
+    let lineBuffers =
+        Array.init (int screen.Row) (fun _ -> Array.create (int screen.Column) ' ')
+
+    member __.Render(board: Board) =
+        let pos = screen.GetCursorPosition()
+        let info = $"#Press Q to quit. Board: %d{board.Column} x %d{board.Row}"
 #if DEBUG
-    // NOTE: additional info for debugging.
-    let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
+        // NOTE: additional info for debugging.
+        let info = $"%s{info} Position: %A{pos} Diff: %d{screen.Diff}"
 #endif
 #if DEBUG || SHOW_FPS
-    let info = $"%s{info} FPS: %.2f{FpsCounter.get ()}"
+        let info = $"%s{info} FPS: %.2f{FpsCounter.get ()}"
 #endif
-    info |> screen.WriteLine
+        info |> screen.WriteLine
 
-    $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
-    |> screen.WriteLine
+        $"#Generation: %10d{board.Generation} Living: %10d{board.Lives}"
+        |> screen.WriteLine
 
-    screen.EmptyWriteLine()
+        screen.EmptyWriteLine()
 
-    for y in 0 .. int board.Row - 1 do
-        [| for x in 0 .. int board.Column - 1 -> toSymbol board.Cells.[y, x] |]
-        |> screen.WriteLineCharArray
+        Parallel.ForEach(
+            partitioner,
+            fun (startIdx, endIdx) ->
+                for y in startIdx .. endIdx - 1 do
+                    for x in 0 .. int board.Column - 1 do
+                        lineBuffers[y][x] <- toSymbol board.Cells.[y, x]
+        )
+        |> ignore
 
-    screen.Flush()
-    pos |> screen.SetCursorPosition
+        lineBuffers |> Array.iter screen.WriteLineCharArray
+        screen.Flush()
+        pos |> screen.SetCursorPosition
 
 let inline stopRequested<'Screen
     when 'Screen: (member KeyAvailable: unit -> bool) and 'Screen: (member ReadKey: unit -> ConsoleKeyInfo)>
@@ -138,9 +145,10 @@ let defaultInterval = 100<ms>
 let inline game (screen: ^Screen) (board: Board) =
     async {
         let mutable b = board
+        let r = new Renderer(screen)
 
         while not <| stopRequested screen do
-            render screen b
+            r.Render b
             do! Async.Sleep(int board.Interval)
             b <- b |> nextGeneration
     }
