@@ -2,7 +2,6 @@ module PSGameOfLife.View.Character
 
 open System
 open System.IO
-open Microsoft.FSharp.NativeInterop
 
 open PSGameOfLife.Core
 #if DEBUG || SHOW_FPS
