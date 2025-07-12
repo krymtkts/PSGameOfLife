@@ -73,15 +73,15 @@ type Screen() =
             // NOTE: get_CursorPosition doesn't work on Linux, so we cannot backup the cursor position. We can only set it back to true directly.
             Console.CursorVisible <- true
 
-    member __.Write(s: string) = s |> Console.Write
-    member __.WriteLine(s: string) = s |> Console.WriteLine
-    member __.WriteLineCharArray(s: char array) = s |> Console.WriteLine
-    member __.EmptyWriteLine() = Console.WriteLine()
+    member inline __.Write(s: string) = s |> Console.Write
+    member inline __.WriteLine(s: string) = s |> Console.WriteLine
+    member inline __.WriteLineCharArray(s: char array) = s |> Console.WriteLine
+    member inline __.EmptyWriteLine() = Console.WriteLine()
     member __.Flush() = writer.Flush()
-    member __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
-    member __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
-    member __.KeyAvailable() = Console.KeyAvailable
-    member __.ReadKey() = Console.ReadKey(true)
+    member inline __.GetCursorPosition() = Console.GetCursorPosition().ToTuple()
+    member inline __.SetCursorPosition(x: int, y: int) = (x, y) |> Console.SetCursorPosition
+    member inline __.KeyAvailable() = Console.KeyAvailable
+    member inline __.ReadKey() = Console.ReadKey(true)
 
     member __.Column = width
     member __.Row = height
