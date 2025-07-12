@@ -235,8 +235,6 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
             Canvas.SetRight(tb, 0.0)
             tb.SetValue(Canvas.ZIndexProperty, 100) |> ignore
             tb
-#else
-        let fpsText = null
 #endif
         let canvas = Canvas(Width = float width, Height = float height)
         let stack = StackPanel()
