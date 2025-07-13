@@ -39,37 +39,31 @@ let nextCellState (cell: Cell) (lives: int) =
 let countLiveCells (cells: Cell[,]) =
     let mutable alive = 0
 
-    cells
-    |> Array2D.iter (fun cell ->
-        if cell.IsLive then
-            alive <- alive + 1)
+    for y in 0 .. Array2D.length1 cells - 1 do
+        for x in 0 .. Array2D.length2 cells - 1 do
+            if cells.[y, x].IsLive then
+                alive <- alive + 1
 
     alive
 
 let nextGeneration (buffer: outref<Cell[,]>) (board: outref<Board>) =
     let columns = int board.Column
     let rows = int board.Row
-    let cells = board.Cells
-
-    let nextGeneration y x cell =
-        let mutable lives = 0
-
-        neighborOffsets
-        |> Array.iter (fun (dx, dy) ->
-            let nx, ny = x + dx, y + dy
-
-            if nx >= 0 && nx < columns && ny >= 0 && ny < rows && cells.[ny, nx].IsLive then
-                lives <- lives + 1)
-
-        nextCellState cell lives
-
     let tmp = buffer
 
-    board.Cells
-    |> Array2D.iteri (fun y x cell -> tmp.[y, x] <- nextGeneration y x cell)
+    for y in 0 .. rows - 1 do
+        for x in 0 .. columns - 1 do
+            let mutable lives = 0
+
+            for dx, dy in neighborOffsets do
+                let nx, ny = x + dx, y + dy
+
+                if nx >= 0 && nx < columns && ny >= 0 && ny < rows && board.Cells.[ny, nx].IsLive then
+                    lives <- lives + 1
+
+            tmp.[y, x] <- nextCellState board.Cells.[y, x] lives
 
     buffer <- board.Cells
-
     board.Generation <- board.Generation + 1
     board.Lives <- tmp |> countLiveCells
     board.Cells <- tmp
