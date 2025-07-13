@@ -146,11 +146,7 @@ module Main =
             // NOTE: pinning the template array to avoid GC moving it.
             use ptr = fixed &rem.[0]
 
-            Unsafe.CopyBlockUnaligned(
-                NativePtr.toVoidPtr dstRemPtr,
-                NativePtr.toVoidPtr (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt ptr)),
-                uint32 rem.Length
-            )
+            Unsafe.CopyBlockUnaligned(NativePtr.toVoidPtr dstRemPtr, NativePtr.toVoidPtr ptr, uint32 rem.Length)
 
 type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit Window()
@@ -181,11 +177,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                             | Dead -> templates.DeadVectors, templates.DeadRemBytes
 
                         for dy = 0 to cellSize - 1 do
-                            let dstOffset = ((yc + dy) * width + xc) <<< 2
-
-                            let dstLinePtr =
-                                NativePtr.add (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt tempPtr)) dstOffset
-
+                            let dstOffset = (yc + dy) * width + xc <<< 2
+                            let dstLinePtr = NativePtr.add tempPtr dstOffset
                             Main.writeTemplateSIMD dstLinePtr vectors bytes
         )
         |> ignore
