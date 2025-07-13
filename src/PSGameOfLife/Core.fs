@@ -18,10 +18,10 @@ type row
 type Board =
     { Column: int<col>
       Row: int<row>
-      Lives: int
-      Generation: int
+      mutable Lives: int
+      mutable Generation: int
       Interval: int<ms>
-      Cells: Cell[,] }
+      mutable Cells: Cell[,] }
 
 let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
@@ -46,7 +46,7 @@ let countLiveCells (cells: Cell[,]) =
 
     alive
 
-let nextGeneration (buffer: outref<Cell[,]>) (board: Board) =
+let nextGeneration (buffer: outref<Cell[,]>) (board: outref<Board>) =
     let columns = int board.Column
     let rows = int board.Row
     let cells = board.Cells
@@ -70,13 +70,9 @@ let nextGeneration (buffer: outref<Cell[,]>) (board: Board) =
 
     buffer <- board.Cells
 
-    let board =
-        { board with
-            Generation = board.Generation + 1
-            Lives = tmp |> countLiveCells
-            Cells = tmp }
-
-    board
+    board.Generation <- board.Generation + 1
+    board.Lives <- tmp |> countLiveCells
+    board.Cells <- tmp
 
 let createBoard initializer (col: int<col>) (row: int<row>) (interval: int<ms>) =
     let cells = Array2D.init (int row) (int col) initializer

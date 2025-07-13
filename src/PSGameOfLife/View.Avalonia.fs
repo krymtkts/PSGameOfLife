@@ -243,7 +243,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                     |> Async.AwaitTask
 
                 do! Async.Sleep(int b.Interval)
-                b <- nextGeneration &buffer b
+                nextGeneration &buffer &b
         }
 
     do

@@ -150,6 +150,6 @@ let inline game (screen: ^Screen) (board: Board) =
         while not <| stopRequested screen do
             r.Render b
             do! Async.Sleep(int board.Interval)
-            b <- nextGeneration &buffer b
+            nextGeneration &buffer &b
     }
     |> Async.RunSynchronously
