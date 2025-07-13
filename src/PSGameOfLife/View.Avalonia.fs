@@ -232,19 +232,18 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 #endif
         stack, updateUI
 
-    [<TailCall>]
-    let rec loop board =
+    let loop board =
         async {
-            if cts.IsCancellationRequested then
-                return ()
+            let mutable b = board
+            let mutable buffer = Array2D.copy b.Cells
 
-            do!
-                Dispatcher.UIThread.InvokeAsync(fun () -> updateUI board).GetTask()
-                |> Async.AwaitTask
+            while not cts.IsCancellationRequested do
+                do!
+                    Dispatcher.UIThread.InvokeAsync(fun () -> updateUI b).GetTask()
+                    |> Async.AwaitTask
 
-            do! Async.Sleep(int board.Interval)
-            let currentBoard = nextGeneration board
-            return! loop currentBoard
+                do! Async.Sleep(int b.Interval)
+                nextGeneration &buffer &b
         }
 
     do

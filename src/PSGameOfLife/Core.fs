@@ -18,28 +18,14 @@ type row
 type Board =
     { Column: int<col>
       Row: int<row>
-      Lives: int
-      Generation: int
+      mutable Lives: int
+      mutable Generation: int
       Interval: int<ms>
-      Cells: Cell[,] }
+      mutable Cells: Cell[,] }
 
 let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
-
-let getNeighborsRange (col: int<col>) (row: int<row>) (x: int) (y: int) =
-    neighborOffsets
-    |> Array.choose (fun (dx, dy) ->
-        let nx, ny = x + dx, y + dy
-
-        if nx >= 0 && nx < int col && ny >= 0 && ny < int row then
-            Some(nx, ny)
-        else
-            None)
-
-let countLiveNeighbors (cells: Cell[,]) (neighborsRange: (int * int) array) =
-    neighborsRange
-    |> Array.sumBy (fun (x, y) -> if cells.[y, x].IsLive then 1 else 0)
 
 let (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
 let (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
@@ -53,25 +39,34 @@ let nextCellState (cell: Cell) (lives: int) =
 let countLiveCells (cells: Cell[,]) =
     let mutable alive = 0
 
-    cells
-    |> Array2D.iter (fun cell ->
-        if cell.IsLive then
-            alive <- alive + 1)
+    for y in 0 .. Array2D.length1 cells - 1 do
+        for x in 0 .. Array2D.length2 cells - 1 do
+            if cells.[y, x].IsLive then
+                alive <- alive + 1
 
     alive
 
-let nextGeneration (board: Board) =
-    let nextGeneration y x cell =
-        getNeighborsRange board.Column board.Row x y
-        |> countLiveNeighbors board.Cells
-        |> nextCellState cell
+let nextGeneration (buffer: outref<Cell[,]>) (board: outref<Board>) =
+    let columns = int board.Column
+    let rows = int board.Row
+    let tmp = buffer
 
-    let cells = board.Cells |> Array2D.mapi nextGeneration
+    for y in 0 .. rows - 1 do
+        for x in 0 .. columns - 1 do
+            let mutable lives = 0
 
-    { board with
-        Generation = board.Generation + 1
-        Lives = cells |> countLiveCells
-        Cells = cells }
+            for dx, dy in neighborOffsets do
+                let nx, ny = x + dx, y + dy
+
+                if nx >= 0 && nx < columns && ny >= 0 && ny < rows && board.Cells.[ny, nx].IsLive then
+                    lives <- lives + 1
+
+            tmp.[y, x] <- nextCellState board.Cells.[y, x] lives
+
+    buffer <- board.Cells
+    board.Generation <- board.Generation + 1
+    board.Lives <- tmp |> countLiveCells
+    board.Cells <- tmp
 
 let createBoard initializer (col: int<col>) (row: int<row>) (interval: int<ms>) =
     let cells = Array2D.init (int row) (int col) initializer

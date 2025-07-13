@@ -1,6 +1,5 @@
 ﻿namespace PSGameOfLife
 
-open System
 open System.Management.Automation
 
 [<AutoOpen>]
@@ -57,16 +56,16 @@ type StartGameOfLifeCommand() =
     override __.ProcessRecord() = ()
 
     override __.EndProcessing() =
+        let initializer = Algorithm.random __.FateRoll
+
         __.GuiMode
         |> UIMode.fromSwitch
         |> function
             | UIMode.Cui ->
                 use screen = new View.Character.Screen()
-                let initializer = Algorithm.random __.FateRoll
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Character.game screen board
             | UIMode.Gui ->
                 use screen = new View.Avalonia.Screen(__.CellSize, __.Width, __.Height)
-                let initializer = Algorithm.random __.FateRoll
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Avalonia.game screen board
