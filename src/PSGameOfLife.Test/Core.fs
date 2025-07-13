@@ -5,7 +5,6 @@ open Expecto.Flip
 
 open PSGameOfLife.Core
 
-
 [<Tests>]
 let testsCore =
     testList
@@ -21,8 +20,9 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Dead |] |] }
 
-              board
-              |> nextGeneration
+              let mutable buffer = Array2D.copy board.Cells
+
+              nextGeneration &buffer board
               |> Expect.equal
                   "should stay dead"
                   { board with
@@ -39,8 +39,9 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Live |] |] }
 
-              board
-              |> nextGeneration
+              let mutable buffer = Array2D.copy board.Cells
+
+              nextGeneration &buffer board
               |> Expect.equal
                   "should die"
                   { board with
@@ -65,8 +66,9 @@ let testsCore =
 
                              |] }
 
-              board
-              |> nextGeneration
+              let mutable buffer = Array2D.copy board.Cells
+
+              nextGeneration &buffer board
               |> Expect.equal
                   "should become Block"
                   { board with
@@ -98,8 +100,9 @@ let testsCore =
 
                              |] }
 
-              board
-              |> nextGeneration
+              let mutable buffer = Array2D.copy board.Cells
+
+              nextGeneration &buffer board
               |> Expect.equal
                   "should stay alive"
                   { board with
@@ -132,8 +135,9 @@ let testsCore =
 
                              |] }
 
-              board
-              |> nextGeneration
+              let mutable buffer = Array2D.copy board.Cells
+
+              nextGeneration &buffer board
               |> Expect.equal
                   "should become a horizontal line"
                   { board with

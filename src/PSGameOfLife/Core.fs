@@ -46,7 +46,7 @@ let countLiveCells (cells: Cell[,]) =
 
     alive
 
-let nextGeneration (board: Board) =
+let nextGeneration (buffer: outref<Cell[,]>) (board: Board) =
     let columns = int board.Column
     let rows = int board.Row
     let cells = board.Cells
@@ -63,12 +63,20 @@ let nextGeneration (board: Board) =
 
         nextCellState cell lives
 
-    let cells = board.Cells |> Array2D.mapi nextGeneration
+    let tmp = buffer
 
-    { board with
-        Generation = board.Generation + 1
-        Lives = cells |> countLiveCells
-        Cells = cells }
+    board.Cells
+    |> Array2D.iteri (fun y x cell -> tmp.[y, x] <- nextGeneration y x cell)
+
+    buffer <- board.Cells
+
+    let board =
+        { board with
+            Generation = board.Generation + 1
+            Lives = tmp |> countLiveCells
+            Cells = tmp }
+
+    board
 
 let createBoard initializer (col: int<col>) (row: int<row>) (interval: int<ms>) =
     let cells = Array2D.init (int row) (int col) initializer
