@@ -27,20 +27,6 @@ let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
 
-let getNeighborsRange (col: int<col>) (row: int<row>) (x: int) (y: int) =
-    neighborOffsets
-    |> Array.choose (fun (dx, dy) ->
-        let nx, ny = x + dx, y + dy
-
-        if nx >= 0 && nx < int col && ny >= 0 && ny < int row then
-            Some(nx, ny)
-        else
-            None)
-
-let countLiveNeighbors (cells: Cell[,]) (neighborsRange: (int * int) array) =
-    neighborsRange
-    |> Array.sumBy (fun (x, y) -> if cells.[y, x].IsLive then 1 else 0)
-
 let (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
 let (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
 
@@ -61,10 +47,21 @@ let countLiveCells (cells: Cell[,]) =
     alive
 
 let nextGeneration (board: Board) =
+    let columns = int board.Column
+    let rows = int board.Row
+    let cells = board.Cells
+
     let nextGeneration y x cell =
-        getNeighborsRange board.Column board.Row x y
-        |> countLiveNeighbors board.Cells
-        |> nextCellState cell
+        let mutable lives = 0
+
+        neighborOffsets
+        |> Array.iter (fun (dx, dy) ->
+            let nx, ny = x + dx, y + dy
+
+            if nx >= 0 && nx < columns && ny >= 0 && ny < rows && cells.[ny, nx].IsLive then
+                lives <- lives + 1)
+
+        nextCellState cell lives
 
     let cells = board.Cells |> Array2D.mapi nextGeneration
 
