@@ -12,7 +12,7 @@ let testsCore =
         [
 
           test "When a dead cell without neighbors" {
-              let mutable board =
+              let origin =
                   { Column = 1<col>
                     Row = 1<row>
                     Lives = 0
@@ -20,6 +20,7 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Dead |] |] }
 
+              let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
               nextGeneration &buffer &board
@@ -27,13 +28,13 @@ let testsCore =
               board
               |> Expect.equal
                   "should stay dead"
-                  { board with
+                  { origin with
                       Generation = 1
                       Cells = array2D [| [| Dead |] |] }
           }
 
           test "When a live cell without neighbors" {
-              let mutable board =
+              let origin =
                   { Column = 1<col>
                     Row = 1<row>
                     Lives = 1
@@ -41,6 +42,7 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Live |] |] }
 
+              let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
               nextGeneration &buffer &board
@@ -55,7 +57,7 @@ let testsCore =
           }
 
           test "When 3 live neighbors in a 2x2 board" {
-              let mutable board =
+              let origin =
                   { Column = 2<col>
                     Row = 2<row>
                     Lives = 3
@@ -70,6 +72,7 @@ let testsCore =
 
                              |] }
 
+              let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
               nextGeneration &buffer &board
@@ -91,7 +94,7 @@ let testsCore =
           }
 
           test "When Block" {
-              let mutable board =
+              let origin =
                   { Column = 2<col>
                     Row = 2<row>
                     Lives = 4
@@ -106,6 +109,7 @@ let testsCore =
 
                              |] }
 
+              let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
               nextGeneration &buffer &board
@@ -127,7 +131,7 @@ let testsCore =
 
 
           test "when Blinker is vertical" {
-              let mutable board =
+              let origin =
                   { Column = 3<col>
                     Row = 3<row>
                     Lives = 3
@@ -143,6 +147,7 @@ let testsCore =
 
                              |] }
 
+              let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
               nextGeneration &buffer &board
