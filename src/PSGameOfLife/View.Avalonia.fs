@@ -150,6 +150,7 @@ module Main =
 
 type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as __ =
     inherit Window()
+    let isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
@@ -221,9 +222,15 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 #if DEBUG || SHOW_FPS
         fpsText |> canvas.Children.Add
 #endif
+        // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
+        let shortcutInfo =
+            if isLinux then
+                fun column row -> $"#Board: %d{column} x %d{row}"
+            else
+                fun column row -> $"#Press Q to quit. Board: %d{column} x %d{row}"
 
         let updateUI board =
-            status1.Text <- $"#Press Q to quit. Board: {board.Column} x {board.Row}"
+            status1.Text <- shortcutInfo board.Column board.Row
             status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
             renderBoard board.Cells wb
             image.InvalidateVisual()
@@ -263,7 +270,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         base.OnClosed(e)
 
     override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
-        if e.Key = Avalonia.Input.Key.Q then
+        // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
+        if not isLinux && e.Key = Avalonia.Input.Key.Q then
 #if DEBUG
             printfn "Quitting PSGameOfLife."
 #endif
