@@ -243,14 +243,27 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         async {
             let mutable b = board
             let mutable buffer = Array2D.copy b.Cells
+            let ct = cts.Token
 
-            while not cts.IsCancellationRequested do
-                do!
-                    Dispatcher.UIThread.InvokeAsync(fun () -> updateUI b).GetTask()
-                    |> Async.AwaitTask
+            try
+                while not cts.IsCancellationRequested do
+                    do!
+                        Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Render, ct).GetTask()
+                        |> Async.AwaitTask
 
-                do! Async.Sleep(int b.Interval)
-                nextGeneration &buffer &b
+                    do! Async.Sleep(int b.Interval)
+                    nextGeneration &buffer &b
+            with
+            | :? OperationCanceledException ->
+#if DEBUG
+                printfn "DispatcherOperation was cancelled."
+#endif
+                return ()
+            | ex ->
+#if DEBUG
+                printfn "Error occurred in DispatcherOperation: %s" ex.Message
+#endif
+                return ()
         }
 
     do
