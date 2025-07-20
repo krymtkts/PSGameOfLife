@@ -253,13 +253,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
                     do! Async.Sleep(int b.Interval)
                     nextGeneration &buffer &b
-            with
-            | :? OperationCanceledException ->
-#if DEBUG
-                printfn "DispatcherOperation was cancelled."
-#endif
-                return ()
-            | ex ->
+            with ex ->
 #if DEBUG
                 printfn "Error occurred in DispatcherOperation: %s" ex.Message
 #endif
