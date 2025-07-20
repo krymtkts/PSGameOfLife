@@ -4,6 +4,7 @@ open Expecto
 open Expecto.Flip
 
 open PSGameOfLife.Core
+open System.Collections.Concurrent
 
 [<Tests>]
 let testsCore =
@@ -20,10 +21,11 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Dead |] |] }
 
+              let partitioner = Partitioner.Create(0, int origin.Row)
               let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration &buffer &board
+              nextGeneration partitioner &buffer &board
 
               board
               |> Expect.equal
@@ -42,10 +44,11 @@ let testsCore =
                     Interval = 0<ms>
                     Cells = array2D [| [| Live |] |] }
 
+              let partitioner = Partitioner.Create(0, int origin.Row)
               let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration &buffer &board
+              nextGeneration partitioner &buffer &board
 
               board
               |> Expect.equal
@@ -72,10 +75,11 @@ let testsCore =
 
                              |] }
 
+              let partitioner = Partitioner.Create(0, int origin.Row)
               let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration &buffer &board
+              nextGeneration partitioner &buffer &board
 
               board
               |> Expect.equal
@@ -109,10 +113,11 @@ let testsCore =
 
                              |] }
 
+              let partitioner = Partitioner.Create(0, int origin.Row)
               let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration &buffer &board
+              nextGeneration partitioner &buffer &board
 
               board
               |> Expect.equal
@@ -147,10 +152,11 @@ let testsCore =
 
                              |] }
 
+              let partitioner = Partitioner.Create(0, int origin.Row)
               let mutable board = origin
               let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration &buffer &board
+              nextGeneration partitioner &buffer &board
 
               board
               |> Expect.equal

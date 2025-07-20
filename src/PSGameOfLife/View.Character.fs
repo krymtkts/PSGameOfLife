@@ -144,12 +144,13 @@ let defaultInterval = 100<ms>
 let inline game (screen: ^Screen) (board: Board) =
     async {
         let mutable b = board
+        let partitioner = Partitioner.Create(0, int board.Row)
         let mutable buffer = Array2D.copy b.Cells
         let r = new Renderer(screen)
 
         while not <| stopRequested screen do
             r.Render b
             do! Async.Sleep(int board.Interval)
-            nextGeneration &buffer &b
+            nextGeneration partitioner &buffer &b
     }
     |> Async.RunSynchronously

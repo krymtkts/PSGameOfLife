@@ -242,6 +242,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
     let loop board =
         async {
             let mutable b = board
+            let partitioner = Partitioner.Create(0, int board.Row)
             let mutable buffer = Array2D.copy b.Cells
             let ct = cts.Token
 
@@ -252,7 +253,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                         |> Async.AwaitTask
 
                     do! Async.Sleep(int b.Interval)
-                    nextGeneration &buffer &b
+                    nextGeneration partitioner &buffer &b
             with ex ->
 #if DEBUG
                 printfn "Error occurred in DispatcherOperation: %s" ex.Message
