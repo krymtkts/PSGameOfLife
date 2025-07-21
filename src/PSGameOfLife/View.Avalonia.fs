@@ -240,7 +240,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         stack, updateUI
 
     let loop board =
-        async {
+        task {
             let mutable b = board
             let partitioner = Partitioner.Create(0, int board.Row)
             let mutable buffer = Array2D.copy b.Cells
@@ -248,12 +248,10 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
             try
                 while not cts.IsCancellationRequested do
-                    do!
-                        // NOTE: Using high priority may delay the window closing event.
-                        Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
-                        |> Async.AwaitTask
-
-                    do! Async.Sleep(int b.Interval)
+                    ct.ThrowIfCancellationRequested()
+                    // NOTE: Using high priority may delay the window closing event.
+                    do! Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
+                    do! Task.Delay(int b.Interval)
                     nextGeneration partitioner &buffer &b
             with ex ->
 #if DEBUG
@@ -272,7 +270,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
 
-        Async.StartImmediate(loop board, cts.Token)
+        loop board |> ignore
 
     override __.OnClosed(e: EventArgs) =
         cts.Cancel()
