@@ -254,7 +254,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                     do! Task.Delay(int b.Interval)
                     nextGeneration partitioner &buffer &b
             with ex ->
-#if DEBUG
+#if DEBUG || SHOW_FPS
                 printfn "Error occurred in DispatcherOperation: %s" ex.Message
 #endif
                 return ()
@@ -266,20 +266,26 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         __.Height <- float height + Main.statusRowHeight * 2.0
         __.CanResize <- false
         __.Content <- stack
-#if DEBUG
+#if DEBUG || SHOW_FPS
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
 
         loop board |> ignore
 
     override __.OnClosed(e: EventArgs) =
+#if DEBUG || SHOW_FPS
+        printfn "Start Closed PSGameOfLife."
+#endif
         cts.Cancel()
         base.OnClosed(e)
+#if DEBUG || SHOW_FPS
+        printfn "Closed PSGameOfLife."
+#endif
 
     override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
         // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
         if not isLinux && e.Key = Avalonia.Input.Key.Q then
-#if DEBUG
+#if DEBUG || SHOW_FPS
             printfn "Quitting PSGameOfLife."
 #endif
             __.Close()
@@ -320,7 +326,7 @@ type Screen(cellSize: int, col: int, row: int) =
 
     interface IDisposable with
         member __.Dispose() =
-#if DEBUG
+#if DEBUG || SHOW_FPS
             printfn "Disposing Screen with size %d x %d" col row
 #endif
             let app =
