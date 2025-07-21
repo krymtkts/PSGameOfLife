@@ -1,5 +1,7 @@
 module PSGameOfLife.Core
 
+open System.Collections.Concurrent
+
 [<Struct>]
 type Cell =
     | Dead
@@ -46,22 +48,28 @@ let countLiveCells (cells: Cell[,]) =
 
     alive
 
-let nextGeneration (buffer: outref<Cell[,]>) (board: outref<Board>) =
+let nextGeneration (partitioner: OrderablePartitioner<int * int>) (buffer: outref<Cell[,]>) (board: outref<Board>) =
     let columns = int board.Column
     let rows = int board.Row
+    let b = board
     let tmp = buffer
 
-    for y in 0 .. rows - 1 do
-        for x in 0 .. columns - 1 do
-            let mutable lives = 0
+    System.Threading.Tasks.Parallel.ForEach(
+        partitioner,
+        fun (startIdx, endIdx) ->
+            for y in startIdx .. endIdx - 1 do
+                for x in 0 .. columns - 1 do
+                    let mutable lives = 0
 
-            for dx, dy in neighborOffsets do
-                let nx, ny = x + dx, y + dy
+                    for dx, dy in neighborOffsets do
+                        let nx, ny = x + dx, y + dy
 
-                if nx >= 0 && nx < columns && ny >= 0 && ny < rows && board.Cells.[ny, nx].IsLive then
-                    lives <- lives + 1
+                        if nx >= 0 && nx < columns && ny >= 0 && ny < rows && b.Cells.[ny, nx].IsLive then
+                            lives <- lives + 1
 
-            tmp.[y, x] <- nextCellState board.Cells.[y, x] lives
+                    tmp.[y, x] <- nextCellState b.Cells.[y, x] lives
+    )
+    |> ignore
 
     buffer <- board.Cells
     board.Generation <- board.Generation + 1
