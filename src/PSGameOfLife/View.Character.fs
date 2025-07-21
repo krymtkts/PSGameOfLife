@@ -142,7 +142,7 @@ let inline stopRequested<'Screen
 let defaultInterval = 100<ms>
 
 let inline game (screen: ^Screen) (board: Board) =
-    async {
+    task {
         let mutable b = board
         let partitioner = Partitioner.Create(0, int board.Row)
         let mutable buffer = Array2D.copy b.Cells
@@ -150,7 +150,7 @@ let inline game (screen: ^Screen) (board: Board) =
 
         while not <| stopRequested screen do
             r.Render b
-            do! Async.Sleep(int board.Interval)
+            do! Task.Delay(int board.Interval)
             nextGeneration partitioner &buffer &b
     }
-    |> Async.RunSynchronously
+    |> Task.WaitAll

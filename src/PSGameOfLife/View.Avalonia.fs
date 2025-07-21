@@ -160,7 +160,12 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
     let partitioner = Partitioner.Create(0, int board.Row)
     let lenX = int board.Column - 1
 
-    let renderBoard (cells: Cell[,]) (wb: WriteableBitmap) =
+    let renderBoard (wb: WriteableBitmap) =
+        // NOTE: Parallel write to WriteableBitmap cause a deadlock. so avoid it by using a temporary buffer.
+        use fb = wb.Lock()
+        Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
+
+    let prepareBoard (cells: Cell[,]) =
         use tempPtr = fixed &tempBuffer.[0]
 
         Parallel.ForEach(
@@ -183,10 +188,6 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                             Main.writeTemplateSIMD dstLinePtr vectors bytes
         )
         |> ignore
-
-        // NOTE: Parallel write to WriteableBitmap cause a deadlock. so avoid it by using a temporary buffer.
-        use fb = wb.Lock()
-        Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
     let stack, updateUI =
         let status1 =
@@ -232,7 +233,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         let updateUI board =
             status1.Text <- shortcutInfo board.Column board.Row
             status2.Text <- $"#Generation: {board.Generation, 10} Living: {board.Lives, 10}"
-            renderBoard board.Cells wb
+            renderBoard wb
             image.InvalidateVisual()
 #if DEBUG || SHOW_FPS
             fpsText.Text <- $"FPS: %.2f{FpsCounter.get ()}"
@@ -240,7 +241,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         stack, updateUI
 
     let loop board =
-        async {
+        task {
             let mutable b = board
             let partitioner = Partitioner.Create(0, int board.Row)
             let mutable buffer = Array2D.copy b.Cells
@@ -248,14 +249,14 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
             try
                 while not cts.IsCancellationRequested do
-                    do!
-                        Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Render, ct).GetTask()
-                        |> Async.AwaitTask
-
-                    do! Async.Sleep(int b.Interval)
+                    ct.ThrowIfCancellationRequested()
+                    prepareBoard b.Cells
+                    // NOTE: Using high priority may delay the window closing event.
+                    do! Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
+                    do! Task.Delay(int b.Interval)
                     nextGeneration partitioner &buffer &b
             with ex ->
-#if DEBUG
+#if DEBUG || SHOW_FPS
                 printfn "Error occurred in DispatcherOperation: %s" ex.Message
 #endif
                 return ()
@@ -267,20 +268,26 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         __.Height <- float height + Main.statusRowHeight * 2.0
         __.CanResize <- false
         __.Content <- stack
-#if DEBUG
+#if DEBUG || SHOW_FPS
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
 
-        Async.StartImmediate(loop board, cts.Token)
+        loop board |> ignore
 
     override __.OnClosed(e: EventArgs) =
+#if DEBUG || SHOW_FPS
+        printfn "Start Closed PSGameOfLife."
+#endif
         cts.Cancel()
         base.OnClosed(e)
+#if DEBUG || SHOW_FPS
+        printfn "Closed PSGameOfLife."
+#endif
 
     override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
         // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
         if not isLinux && e.Key = Avalonia.Input.Key.Q then
-#if DEBUG
+#if DEBUG || SHOW_FPS
             printfn "Quitting PSGameOfLife."
 #endif
             __.Close()
@@ -321,7 +328,7 @@ type Screen(cellSize: int, col: int, row: int) =
 
     interface IDisposable with
         member __.Dispose() =
-#if DEBUG
+#if DEBUG || SHOW_FPS
             printfn "Disposing Screen with size %d x %d" col row
 #endif
             let app =
