@@ -249,7 +249,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
             try
                 while not cts.IsCancellationRequested do
                     do!
-                        Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Render, ct).GetTask()
+                        // NOTE: Using high priority may delay the window closing event.
+                        Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
                         |> Async.AwaitTask
 
                     do! Async.Sleep(int b.Interval)
