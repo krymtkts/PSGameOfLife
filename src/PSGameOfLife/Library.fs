@@ -21,34 +21,33 @@ module Data =
                 | true -> UIMode.Gui
                 | false -> UIMode.Cui
 
-[<Cmdlet(VerbsLifecycle.Start, "GameOfLife", DefaultParameterSetName = "Cui")>]
-[<OutputType(typeof<unit>)>]
+[<Cmdlet(VerbsLifecycle.Start, "GameOfLife", DefaultParameterSetName = "CUI")>]
 type StartGameOfLifeCommand() =
     inherit Cmdlet()
 
     // NOTE: use for random initialization only.
-    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "Cui")>]
-    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "CUI")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Fate roll for the cell.", ParameterSetName = "GUI")>]
     [<ValidateRange(0.1, 0.5)>]
     member val FateRoll = Algorithm.defaultFateRoll with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "Cui")>]
-    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "CUI")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Interval millisecond for the game.", ParameterSetName = "GUI")>]
     [<ValidateRange(0, 1000)>]
     member val IntervalMs = View.Character.defaultInterval with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "GUI mode for the game.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "GUI mode for the game.", ParameterSetName = "GUI")>]
     member val GuiMode: SwitchParameter = SwitchParameter(false) with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "Cell size for the GUI.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Cell size for the GUI.", ParameterSetName = "GUI")>]
     [<ValidateRange(1, 10)>]
     member val CellSize = 10 with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "Width for the GUI.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Width for the GUI.", ParameterSetName = "GUI")>]
     [<ValidateRange(10, 1000)>]
     member val Width = 50 with get, set
 
-    [<Parameter(Mandatory = false, HelpMessage = "Height for the GUI.", ParameterSetName = "Gui")>]
+    [<Parameter(Mandatory = false, HelpMessage = "Height for the GUI.", ParameterSetName = "GUI")>]
     [<ValidateRange(10, 1000)>]
     member val Height = 50 with get, set
 
