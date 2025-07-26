@@ -27,7 +27,7 @@ Lower values create sparser initial boards. Higher values create denser ones.</m
         <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
           <maml:name>IntervalMs</maml:name>
           <maml:description>
-            <maml:para>Specifies the interval in milliseconds between each generation update.
+            <maml:para>Specifies the interval in milliseconds between each generation update (between 0 and 1000).
 The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
           </maml:description>
           <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
@@ -35,6 +35,13 @@ The default is 100 ms. Increase this value to slow down the simulation.</maml:pa
       </command:syntaxItem>
       <command:syntaxItem>
         <maml:name>Start-GameOfLife</maml:name>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>CellSize</maml:name>
+          <maml:description>
+            <maml:para>Cell size for the GUI.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
         <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
           <maml:name>FateRoll</maml:name>
           <maml:description>
@@ -45,16 +52,44 @@ Lower values create sparser initial boards. Higher values create denser ones.</m
           <command:parameterValue required="false" variableLength="true">System.Double</command:parameterValue>
         </command:parameter>
         <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>GuiMode</maml:name>
+          <maml:description>
+            <maml:para>GUI mode for the game.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>Height</maml:name>
+          <maml:description>
+            <maml:para>Height for the GUI.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
           <maml:name>IntervalMs</maml:name>
           <maml:description>
-            <maml:para>Specifies the interval in milliseconds between each generation update.
+            <maml:para>Specifies the interval in milliseconds between each generation update (between 0 and 1000).
 The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
+          </maml:description>
+          <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+          <maml:name>Width</maml:name>
+          <maml:description>
+            <maml:para>Width for the GUI.</maml:para>
           </maml:description>
           <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
         </command:parameter>
       </command:syntaxItem>
     </command:syntax>
     <command:parameters>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>CellSize</maml:name>
+        <maml:description>
+          <maml:para>Cell size for the GUI.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
       <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
         <maml:name>FateRoll</maml:name>
         <maml:description>
@@ -65,9 +100,23 @@ Lower values create sparser initial boards. Higher values create denser ones.</m
         <command:parameterValue required="false" variableLength="true">System.Double</command:parameterValue>
       </command:parameter>
       <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>GuiMode</maml:name>
+        <maml:description>
+          <maml:para>GUI mode for the game.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Management.Automation.SwitchParameter</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>Height</maml:name>
+        <maml:description>
+          <maml:para>Height for the GUI.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
         <maml:name>IntervalMs</maml:name>
         <maml:description>
-          <maml:para>Specifies the interval in milliseconds between each generation update.
+          <maml:para>Specifies the interval in milliseconds between each generation update (between 0 and 1000).
 The default is 100 ms. Increase this value to slow down the simulation.</maml:para>
         </maml:description>
         <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
@@ -79,6 +128,13 @@ The default is 100 ms. Increase this value to slow down the simulation.</maml:pa
 This parameter has no effect in this version.</maml:para>
         </maml:description>
         <command:parameterValue required="false" variableLength="true">ActionPreference</command:parameterValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="Named" aliases="none">
+        <maml:name>Width</maml:name>
+        <maml:description>
+          <maml:para>Width for the GUI.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="true">System.Int32</command:parameterValue>
       </command:parameter>
     </command:parameters>
     <command:inputTypes>

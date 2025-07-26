@@ -3,7 +3,7 @@ document type: cmdlet
 external help file: PSGameOfLife.dll-Help.xml
 HelpUri: https://github.com/krymtkts/PSGameOfLife/blob/main/docs/PSGameOfLife/Start-GameOfLife.md
 Module Name: PSGameOfLife
-ms.date: 06-08-2025
+ms.date: 07-26-2025
 PlatyPS schema version: 2024-05-01
 ---
 
@@ -15,16 +15,17 @@ Starts an interactive Conway's Game of Life simulation in the console.
 
 ## SYNTAX
 
-### Default (Default)
-
-```
-Start-GameOfLife [-ProgressAction <ActionPreference>] [<CommonParameters>]
-```
-
-### \_\_AllParameterSets
+### CUI (Default)
 
 ```
 Start-GameOfLife [-FateRoll <double>] [-IntervalMs <int>] [<CommonParameters>]
+```
+
+### GUI
+
+```
+Start-GameOfLife [-FateRoll <double>] [-IntervalMs <int>] [-GuiMode] [-CellSize <int>]
+ [-Width <int>] [-Height <int>] [<CommonParameters>]
 ```
 
 ## ALIASES
@@ -48,6 +49,28 @@ This command starts the Game of Life. Each cell has a 25% chance to be alive at 
 
 ## PARAMETERS
 
+### -CellSize
+
+Cell size for the GUI.
+
+```yaml
+Type: System.Int32
+DefaultValue: 10
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: GUI
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
 ### -FateRoll
 
 Specifies the probability (between 0.1 and 0.5).
@@ -56,12 +79,62 @@ Lower values create sparser initial boards. Higher values create denser ones.
 
 ```yaml
 Type: System.Double
-DefaultValue: ""
+DefaultValue: 0.3
 SupportsWildcards: false
 ParameterValue: []
 Aliases: []
 ParameterSets:
-  - Name: (All)
+  - Name: CUI
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+  - Name: GUI
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
+### -GuiMode
+
+GUI mode for the game.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: false
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: GUI
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
+### -Height
+
+Height for the GUI.
+
+```yaml
+Type: System.Int32
+DefaultValue: 50
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: GUI
     Position: Named
     IsRequired: false
     ValueFromPipeline: false
@@ -79,12 +152,18 @@ The default is 100 ms. Increase this value to slow down the simulation.
 
 ```yaml
 Type: System.Int32
-DefaultValue: ""
+DefaultValue: 100
 SupportsWildcards: false
 ParameterValue: []
 Aliases: []
 ParameterSets:
-  - Name: (All)
+  - Name: CUI
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+  - Name: GUI
     Position: Named
     IsRequired: false
     ValueFromPipeline: false
@@ -109,6 +188,28 @@ Aliases:
   - proga
 ParameterSets:
   - Name: (All)
+    Position: Named
+    IsRequired: false
+    ValueFromPipeline: false
+    ValueFromPipelineByPropertyName: false
+    ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ""
+```
+
+### -Width
+
+Width for the GUI.
+
+```yaml
+Type: System.Int32
+DefaultValue: 50
+SupportsWildcards: false
+ParameterValue: []
+Aliases: []
+ParameterSets:
+  - Name: GUI
     Position: Named
     IsRequired: false
     ValueFromPipeline: false
