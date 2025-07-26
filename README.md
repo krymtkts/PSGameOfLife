@@ -9,7 +9,8 @@ It runs [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of
 Tested on PowerShell 7.4 or later with Windows Terminal on both Windows and Ubuntu.
 Visual Studio Code terminal appears to have a higher load than Windows Terminal.
 
-![capture](./docs/images/psgameoflife.gif)
+![default CUI mode](./docs/images/psgameoflife.gif)
+![GUI mode](./docs/images/psgameoflife-gui.gif)
 
 ## Features
 
