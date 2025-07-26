@@ -56,11 +56,15 @@ Start-GameOfLife -FateRoll 0.2 -IntervalMs 200
 
 ### GUI mode
 
-In GUI mode, the Game of Life shows in a window using Avalonia (cross-platform).
-
 ```powershell
 Start-GameOfLife -GuiMode
 ```
+
+Press `Q` during the simulation to quit.
+
+> [!NOTE]
+> On Linux, due to a known issue, quitting the game with the Q key leaves a zombie window.
+> Therefore, the Q key is not provided on Linux. Please close the window to exit.
 
 You can adjust the appearance and size of the window with the following parameters:
 
