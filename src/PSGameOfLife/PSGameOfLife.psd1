@@ -12,7 +12,7 @@
     RootModule = 'PSGameOfLife.dll'
 
     # Version number of this module.
-    ModuleVersion = '0.0.1'
+    ModuleVersion = '0.0.2'
 
     # Supported PSEditions
     CompatiblePSEditions = @(
@@ -91,7 +91,9 @@
     # ModuleList = @()
 
     # List of all files packaged with this module
-    FileList = @('PSGameOfLife.dll', 'PSGameOfLife-Help.xml')
+    # NOTE: FileList is not required field.
+    # NOTE: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5#notes
+    # FileList = @()
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
     PrivateData = @{
