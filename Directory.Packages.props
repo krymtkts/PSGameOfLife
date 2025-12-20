@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- NOTE: F# dependencies. -->
+    <PackageVersion Include="FSharp.Core" Version="10.0.101" />
+
+    <!-- NOTE: PowerShell dependencies. -->
+    <PackageVersion Include="PowerShellStandard.Library" Version="7.0.0-preview.1" />
+
+    <!-- NOTE: Avalonia dependencies. -->
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+
+    <!-- NOTE: Test dependencies. -->
+    <PackageVersion Include="Expecto" Version="10.2.3" />
+    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.3" />
+
+    <!-- NOTE: Analyzer configurations. -->
+    <PackageVersion Include="Ionide.Analyzers" Version="0.14.10" />
+  </ItemGroup>
+</Project>
