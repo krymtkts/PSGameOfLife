@@ -22,7 +22,7 @@ updates:
     # NOTE: directories can use glob patterns.
     directories:
       - "/"
-      - "/src/*"
+      - "/.config"
     schedule:
       interval: "weekly"
       day: "friday"
