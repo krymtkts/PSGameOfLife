@@ -15,8 +15,8 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.10" />
 
     <!-- NOTE: Test dependencies. -->
-    <PackageVersion Include="Expecto" Version="10.2.3" />
-    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.3" />
+    <PackageVersion Include="Expecto" Version="11.0.0-alpha8" />
+    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
 
     <!-- NOTE: Analyzer configurations. -->
     <PackageVersion Include="Ionide.Analyzers" Version="0.14.10" />
