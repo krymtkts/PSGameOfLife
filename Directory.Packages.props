@@ -13,6 +13,8 @@
     <!-- NOTE: Avalonia dependencies. -->
     <PackageVersion Include="Avalonia.Desktop" Version="12.0.0" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.0" />
+    <!-- NOTE: to address Avalonia DBus issue -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.92.0" />
 
     <!-- NOTE: Test dependencies. -->
     <PackageVersion Include="Expecto" Version="11.0.0-alpha8" />

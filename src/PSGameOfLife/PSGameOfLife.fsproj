@@ -50,6 +50,8 @@
     <PackageReference Include="FSharp.Core" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
+    <!-- to address Avalonia DBus issue -->
+    <PackageReference Include="Tmds.DBus.Protocol" />
     <PackageReference Include="PowerShellStandard.Library">
       <ExcludeAssets>contentFiles</ExcludeAssets>
       <PrivateAssets>All</PrivateAssets>
