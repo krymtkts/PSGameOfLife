@@ -18,7 +18,7 @@
 
     <!-- NOTE: Test dependencies. -->
     <PackageVersion Include="Expecto" Version="11.0.0-alpha8" />
-    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.5" />
+    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.6" />
 
     <!-- NOTE: Analyzer configurations. -->
     <PackageVersion Include="Ionide.Analyzers" Version="0.15.0" />
