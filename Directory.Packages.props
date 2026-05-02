@@ -17,7 +17,7 @@
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.92.0" />
 
     <!-- NOTE: Test dependencies. -->
-    <PackageVersion Include="Expecto" Version="11.0.0-alpha8" />
+    <PackageVersion Include="Expecto" Version="11.0.0-alpha9" />
     <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.15.6" />
 
     <!-- NOTE: Analyzer configurations. -->
