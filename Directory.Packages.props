@@ -11,8 +11,8 @@
     <PackageVersion Include="PowerShellStandard.Library" Version="7.0.0-preview.1" />
 
     <!-- NOTE: Avalonia dependencies. -->
-    <PackageVersion Include="Avalonia.Desktop" Version="12.0.1" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.1" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.2" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.2" />
     <!-- NOTE: to address Avalonia DBus issue -->
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.92.0" />
 
