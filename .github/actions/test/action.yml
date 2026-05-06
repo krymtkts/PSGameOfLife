@@ -17,13 +17,13 @@ runs:
       shell: pwsh
       run: |
         Set-PSResourceRepository PSGallery -Trusted
-        Install-PSResource Psake,PSScriptAnalyzer -Quiet -Reinstall -Scope CurrentUser
-        Install-PSResource Microsoft.PowerShell.PlatyPS -Prerelease -Quiet -Reinstall -Scope CurrentUser
+        Install-PSResource pslrm -Prerelease -Quiet -Reinstall -Scope CurrentUser
+        Restore-PSLResource
     - name: Execute All Tests
       shell: pwsh
       run: |
-        Invoke-Psake -taskList TestAll
-        if (-not $psake.build_success) { exit 1 }
+        $result = Invoke-PSLResource Invoke-Psake '-taskList','TestAll'
+        if (-not $result[-1].Success) { exit 1 }
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v6
       if: runner.os == 'Linux'
