@@ -22,7 +22,7 @@ runs:
     - name: Execute All Tests
       shell: pwsh
       run: |
-        $result = Invoke-PSLResource Invoke-Psake '-taskList','TestAll'
+        Invoke-PSLResource Invoke-Psake '-taskList','TestAll' | Tee-Object -Variable result
         if (-not $result[-1].Success) { exit 1 }
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v6
