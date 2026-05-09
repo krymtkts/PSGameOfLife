@@ -6,9 +6,6 @@
     <OutputType>Exe</OutputType>
     <GenerateProgramFile>false</GenerateProgramFile>
     <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <!-- NOTE: For output to console. -->
-    <TestingPlatformCaptureOutput>false</TestingPlatformCaptureOutput>
 
     <Nullable>enable</Nullable>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
@@ -23,6 +20,7 @@
     <PackageReference Include="FSharp.Core" />
     <PackageReference Include="Expecto" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
   </ItemGroup>
 
   <ItemGroup>
