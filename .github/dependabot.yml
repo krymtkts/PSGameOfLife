@@ -49,6 +49,9 @@ updates:
           - "Expecto"
           - "YoloDev.Expecto.TestSdk"
     ignore:
+      - dependency-name: "Microsoft.Testing.Extensions.HangDump"
+        update-types:
+          - "version-update:semver-major"
       - dependency-name: "PowerShellStandard.Library"
         update-types:
           - "version-update:semver-major"
