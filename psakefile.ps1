@@ -130,8 +130,12 @@ Task ReleaseNotes {
     Set-KeepAChangelogManifestReleaseNotes -ManifestPath $ModuleManifest.FullName -ReleaseNotes $releaseNotes
 }
 
-Task Release -PreCondition { $Stage -eq 'Release' } -Depends TestAll, ExternalHelp {
+Task Release -Depends TestAll, ExternalHelp {
     "Release $($ModuleName)! version=$ModuleVersion dryrun=$DryRun"
+
+    if ( $Stage -ne 'Release' ) {
+        throw "Stage must be 'Release' for publishing. Current stage: $Stage"
+    }
 
     $m = Get-Module $ModuleName
     if ($m.Version -ne $ModuleVersion) {
@@ -145,7 +149,7 @@ Task Release -PreCondition { $Stage -eq 'Release' } -Depends TestAll, ExternalHe
     $Params = @{
         Path = $p.FullName
         Repository = 'PSGallery'
-        ApiKey = (Get-Credential API-key -Message 'Enter your API key as the password').GetNetworkCredential().Password
+        ApiKey = ConvertFrom-SecureString $ApiKey -AsPlainText
         WhatIf = $DryRun
         Verbose = $true
     }
