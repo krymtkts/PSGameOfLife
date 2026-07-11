@@ -115,6 +115,12 @@
             # ReleaseNotes of this module
 
             ReleaseNotes = @'
+## [0.0.3] - 2026-07-11
+
+### Changed
+
+- Update bundled `FSharp.Core` from 10.0.101 to 10.1.301 for F# 10.1 assembly support.
+
 ## [0.0.2] - 2025-07-27
 
 ### Added
