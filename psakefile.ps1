@@ -184,7 +184,7 @@ Task ReleaseTag -Depends ValidateReleaseMetadata {
     Write-Host "Created local signed release tag '$gitReleaseTag'." -ForegroundColor Green
 }
 
-Task Release -Depends TestAll, ExternalHelp {
+Task Release -Depends TestAll {
     "Release $($ModuleName)! version=$ModuleVersion dryrun=$DryRun"
 
     if ( $Stage -ne 'Release' ) {
