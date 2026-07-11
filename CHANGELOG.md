@@ -6,6 +6,12 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-07-11
+
+### Changed
+
+- Update bundled `FSharp.Core` from 10.0.101 to 10.1.301 for F# 10.1 assembly support.
+
 ## [0.0.2] - 2025-07-27
 
 ### Added
@@ -42,6 +48,7 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
-[Unreleased]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/krymtkts/PSGameOfLife/releases/tag/v0.0.1
