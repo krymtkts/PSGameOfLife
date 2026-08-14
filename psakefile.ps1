@@ -72,6 +72,7 @@ Task Lint {
             throw "Invoke-ScriptAnalyzer for ${_} failed."
         }
     }
+    Assert-KeepAChangelogReleaseMetadata -Path $ChangelogPath -Version 'Unreleased'
     Get-ValidMarkdownCommentHelp | Out-Null
 }
 
