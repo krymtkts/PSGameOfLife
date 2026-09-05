@@ -159,6 +159,7 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
     let tempBuffer: byte array = Array.zeroCreate bufferSize
     let partitioner = Partitioner.Create(0, int board.Row)
     let lenX = int board.Column - 1
+    let mutable loopTask: Task option = None
 
     let renderBoard (wb: WriteableBitmap) =
         // NOTE: Parallel write to WriteableBitmap cause a deadlock. so avoid it by using a temporary buffer.
@@ -253,13 +254,15 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
                     prepareBoard b.Cells
                     // NOTE: Using high priority may delay the window closing event.
                     do! Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
-                    do! Task.Delay(int b.Interval)
+                    do! Task.Delay(int b.Interval, ct)
                     nextGeneration partitioner &buffer &b
-            with ex ->
+            with
+            | :? OperationCanceledException when ct.IsCancellationRequested -> return ()
+            | ex ->
 #if DEBUG || SHOW_FPS
                 printfn "Error occurred in DispatcherOperation: %s" ex.Message
 #endif
-                return ()
+                return raise ex
         }
 
     do
@@ -272,7 +275,13 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         printfn "Starting PSGameOfLife with board size %d x %d" (int board.Column) (int board.Row)
 #endif
 
-        loop board |> ignore
+    member __.StartLoop() : Task =
+        match loopTask with
+        | Some task -> task
+        | None ->
+            let task = loop board :> Task
+            loopTask <- Some task
+            task
 
     override __.OnClosed(e: EventArgs) =
 #if DEBUG || SHOW_FPS
@@ -331,15 +340,7 @@ type Screen(cellSize: int, col: int, row: int) =
 #if DEBUG || SHOW_FPS
             printfn "Disposing Screen with size %d x %d" col row
 #endif
-            let app =
-                app.Instance
-                |> function
-                    | :? App as app -> app
-                    | _ -> failwith "Application instance is not of type App."
-
-            match app.mainWindow with
-            | null -> ()
-            | window -> window.Close()
+            ()
 
     member __.CellSize = cellSize
     member __.Column = LanguagePrimitives.Int32WithMeasure<col> col
@@ -356,16 +357,41 @@ let inline game (screen: Screen) (board: Board) =
             | :? App as app -> app
             | _ -> failwith "Application instance is not of type App."
 
-    let cts = new Threading.CancellationTokenSource()
+    let desktopLifetime =
+        app.desktopLifetime
+        |> function
+            | null -> failwith "Application lifetime is not set."
+            | desktopLifetime -> desktopLifetime
+
+    use cts = new Threading.CancellationTokenSource()
     let mainWindow = new MainWindow(screen.CellSize, board, cts)
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 
-    match app.desktopLifetime with
-    | null -> failwith "Application lifetime is not set."
-    | desktopLifetime ->
-        desktopLifetime.MainWindow <- mainWindow
-        desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
+    desktopLifetime.MainWindow <- mainWindow
+    desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
 
-    mainWindow.Show()
-    app.Run(cts.Token)
+    let mutable loopTask: Task option = None
+
+    let closeWindowIfOpen () =
+        if mainWindow.IsVisible then
+            mainWindow.Close()
+
+    let clearMainWindow () =
+        if obj.ReferenceEquals(app.mainWindow, mainWindow) then
+            app.mainWindow <- null
+
+    try
+        mainWindow.Show()
+        loopTask <- Some(mainWindow.StartLoop())
+        app.Run(cts.Token)
+    finally
+        try
+            cts.Cancel()
+
+            match loopTask with
+            | Some task -> task.GetAwaiter().GetResult()
+            | None -> ()
+        finally
+            closeWindowIfOpen ()
+            clearMainWindow ()
