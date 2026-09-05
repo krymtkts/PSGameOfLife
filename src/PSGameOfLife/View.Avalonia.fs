@@ -148,12 +148,8 @@ module Main =
 
             Unsafe.CopyBlockUnaligned(NativePtr.toVoidPtr dstRemPtr, NativePtr.toVoidPtr ptr, uint32 rem.Length)
 
-type MainWindow(
-    cellSize: int,
-    board: Board,
-    cts: Threading.CancellationTokenSource,
-    requestShutdown: unit -> unit
-) as __ =
+type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource, requestShutdown: unit -> unit) as __
+    =
     inherit Window()
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
@@ -228,7 +224,8 @@ type MainWindow(
 #if DEBUG || SHOW_FPS
         fpsText |> canvas.Children.Add
 #endif
-        let shortcutInfo column row = $"#Press Q to quit. Board: %d{column} x %d{row}"
+        let shortcutInfo column row =
+            $"#Press Q to quit. Board: %d{column} x %d{row}"
 
         let updateUI board =
             status1.Text <- shortcutInfo board.Column board.Row
@@ -257,6 +254,7 @@ type MainWindow(
                             .InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct)
                             .GetTask()
                             .ConfigureAwait(false)
+
                     do! (Task.Delay(int b.Interval, ct)).ConfigureAwait(false)
                     nextGeneration partitioner &buffer &b
             with
@@ -323,20 +321,21 @@ type App() =
 
 type Screen(cellSize: int, col: int, row: int) =
     static let app =
-        let app =
-            let lt = new ClassicDesktopStyleApplicationLifetime()
+        lazy
+            (let app =
+                let lt = new ClassicDesktopStyleApplicationLifetime()
 
-            AppBuilder
-                .Configure<App>()
-                .UsePlatformDetect()
-                .UseSkia()
-                // NOTE: Graphics operations can produce an extremely large amount of log output, which may be useful for debugging.
-                // .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
-                .SetupWithLifetime(lt)
+                AppBuilder
+                    .Configure<App>()
+                    .UsePlatformDetect()
+                    .UseSkia()
+                    // NOTE: Graphics operations can produce an extremely large amount of log output, which may be useful for debugging.
+                    // .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
+                    .SetupWithLifetime(lt)
 
-        app
+             app)
 
-    member val App = app with get
+    member __.App = app.Value
 
     interface IDisposable with
         member __.Dispose() =
