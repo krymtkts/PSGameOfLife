@@ -155,7 +155,6 @@ type MainWindow(
     requestShutdown: unit -> unit
 ) as __ =
     inherit Window()
-    let isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
     let templates = Main.initCellTemplates cellSize
     let width = int board.Column * cellSize
     let height = int board.Row * cellSize
@@ -229,12 +228,7 @@ type MainWindow(
 #if DEBUG || SHOW_FPS
         fpsText |> canvas.Children.Add
 #endif
-        // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
-        let shortcutInfo =
-            if isLinux then
-                fun column row -> $"#Board: %d{column} x %d{row}"
-            else
-                fun column row -> $"#Press Q to quit. Board: %d{column} x %d{row}"
+        let shortcutInfo column row = $"#Press Q to quit. Board: %d{column} x %d{row}"
 
         let updateUI board =
             status1.Text <- shortcutInfo board.Column board.Row
@@ -258,8 +252,12 @@ type MainWindow(
                     ct.ThrowIfCancellationRequested()
                     prepareBoard b.Cells
                     // NOTE: Using high priority may delay the window closing event.
-                    do! Dispatcher.UIThread.InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct).GetTask()
-                    do! Task.Delay(int b.Interval, ct)
+                    do!
+                        Dispatcher.UIThread
+                            .InvokeAsync((fun () -> updateUI b), DispatcherPriority.Input, ct)
+                            .GetTask()
+                            .ConfigureAwait(false)
+                    do! (Task.Delay(int b.Interval, ct)).ConfigureAwait(false)
                     nextGeneration partitioner &buffer &b
             with
             | :? OperationCanceledException when ct.IsCancellationRequested -> return ()
@@ -299,12 +297,12 @@ type MainWindow(
 #endif
 
     override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
-        // TODO: When quitting with a shortcut key on Linux, the main window remains open even though the application. So remove shortcut key handling on Linux.
-        if not isLinux && e.Key = Avalonia.Input.Key.Q then
+        if e.Key = Avalonia.Input.Key.Q then
 #if DEBUG || SHOW_FPS
             printfn "Quitting PSGameOfLife."
 #endif
-            __.Close()
+            e.Handled <- true
+            Dispatcher.UIThread.Post(System.Action(requestShutdown), DispatcherPriority.Input)
 
 type App() =
     inherit Application()
@@ -369,13 +367,20 @@ let inline game (screen: Screen) (board: Board) =
             | desktopLifetime -> desktopLifetime
 
     use cts = new Threading.CancellationTokenSource()
-    let requestShutdown () = desktopLifetime.Shutdown(0)
+    let mutable currentWindow: MainWindow | null = null
+
+    let requestShutdown () =
+        match currentWindow with
+        | null -> ()
+        | window -> window.Close()
+
     let mainWindow = new MainWindow(screen.CellSize, board, cts, requestShutdown)
+    currentWindow <- mainWindow
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 
     desktopLifetime.MainWindow <- mainWindow
-    desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
+    desktopLifetime.ShutdownMode <- ShutdownMode.OnExplicitShutdown
 
     let mutable loopTask: Task option = None
 
@@ -401,3 +406,4 @@ let inline game (screen: Screen) (board: Board) =
         finally
             closeWindowIfOpen ()
             clearMainWindow ()
+            currentWindow <- null
