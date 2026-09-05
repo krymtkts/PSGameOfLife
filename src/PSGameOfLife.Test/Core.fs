@@ -1,10 +1,53 @@
 module PSGameOfLife.Tests.Core
 
+open System
+open System.Threading
+open System.Threading.Tasks
+
+open Avalonia
+open Avalonia.Headless
+open Avalonia.Input
+open Avalonia.Interactivity
+open Avalonia.Threading
 open Expecto
 open Expecto.Flip
 
 open PSGameOfLife.Core
+open PSGameOfLife.View.Avalonia
 open System.Collections.Concurrent
+
+type HeadlessAppBuilder =
+    static member BuildAvaloniaApp() =
+        let options = AvaloniaHeadlessPlatformOptions()
+        options.UseHeadlessDrawing <- false
+
+        AppBuilder.Configure<App>().UseSkia().UseHeadless(options)
+
+let private headlessBoard =
+    { Column = 1<col>
+      Row = 1<row>
+      Lives = 0
+      Generation = 0
+      Interval = 1<ms>
+      Cells = array2D [| [| Dead |] |] }
+
+let private startHeadlessSession () =
+    HeadlessUnitTestSession.StartNew(typeof<HeadlessAppBuilder>, AvaloniaTestIsolationLevel.PerTest)
+
+let private dispatch (session: HeadlessUnitTestSession) (action: unit -> 'T) =
+    session.Dispatch(Func<'T>(action), CancellationToken.None).GetAwaiter().GetResult()
+
+let private dispatchAsync (session: HeadlessUnitTestSession) (action: unit -> Task<'T>) =
+    session.Dispatch<'T>(Func<Task<'T>>(action), CancellationToken.None).GetAwaiter().GetResult()
+
+let private runPendingJobs () =
+    Dispatcher.UIThread.RunJobs(Nullable<DispatcherPriority>(DispatcherPriority.Input))
+
+let private headlessTest name body =
+    test name {
+        use session = startHeadlessSession ()
+        body session
+    }
 
 [<Tests>]
 let testsCore =
@@ -175,3 +218,113 @@ let testsCore =
           }
 
           ]
+
+[<Tests>]
+let testsAvalonia =
+    testSequenced (
+        testList
+            "Avalonia"
+            [
+
+              headlessTest "window close raises Closed and cancels the token" (fun session ->
+                  let closed, cancelled =
+                      dispatch session (fun () ->
+                          let mutable closed = false
+                          use cts = new CancellationTokenSource()
+                          let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
+
+                          window.Closed.Add(fun _ -> closed <- true)
+                          window.Show()
+                          window.Close()
+
+                          closed, cts.IsCancellationRequested)
+
+                  Expect.isTrue "window close should raise Closed" closed
+                  Expect.isTrue "window close should cancel the token" cancelled)
+
+              headlessTest "Q requests shutdown once and handles the key" (fun session ->
+                  let closedBeforeJobs, requests, handled =
+                      dispatch session (fun () ->
+                          let mutable requests = 0
+                          let mutable closed = false
+                          let mutable handled = false
+                          use cts = new CancellationTokenSource()
+
+                          let window =
+                              new MainWindow(1, headlessBoard, cts, fun () -> requests <- requests + 1)
+
+                          window.Closed.Add(fun _ -> closed <- true)
+
+                          window.AddHandler(
+                              InputElement.KeyDownEvent,
+                              EventHandler<KeyEventArgs>(fun _ e -> handled <- e.Handled),
+                              RoutingStrategies.Bubble,
+                              true
+                          )
+
+                          window.Show()
+                          window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
+                          let closedBeforeJobs = closed
+                          runPendingJobs ()
+                          window.Close()
+                          closedBeforeJobs, requests, handled)
+
+                  Expect.isFalse "Q should not close the window during key handling" closedBeforeJobs
+                  Expect.equal "Q should request shutdown once" 1 requests
+                  Expect.isTrue "Q should be handled" handled)
+
+              headlessTest "Q shutdown callback can close the window" (fun session ->
+                  let requests, closed, cancelled =
+                      dispatch session (fun () ->
+                          let mutable requests = 0
+                          let mutable closed = false
+                          let mutable closeWindow = fun () -> ()
+                          use cts = new CancellationTokenSource()
+
+                          let window =
+                              new MainWindow(
+                                  1,
+                                  headlessBoard,
+                                  cts,
+                                  fun () ->
+                                      requests <- requests + 1
+                                      closeWindow ()
+                              )
+
+                          closeWindow <- window.Close
+                          window.Closed.Add(fun _ -> closed <- true)
+                          window.Show()
+                          window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
+                          runPendingJobs ()
+
+                          let closedByQ = closed
+
+                          if not closed then
+                              window.Close()
+
+                          requests, closedByQ, cts.IsCancellationRequested)
+
+                  Expect.equal "Q should invoke the shutdown callback once" 1 requests
+                  Expect.isTrue "Q shutdown should close the window" closed
+                  Expect.isTrue "Q shutdown should cancel the token" cancelled)
+
+              headlessTest "game loop task completes after window close" (fun session ->
+                  let cancelled =
+                      dispatchAsync session (fun () ->
+                          task {
+                              use cts = new CancellationTokenSource()
+                              let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
+                              let keepAlive = new Avalonia.Controls.Window()
+                              window.Show()
+                              keepAlive.Show()
+                              let loopTask: Task = window.StartLoop()
+                              window.Close()
+                              do! loopTask
+                              keepAlive.Close()
+                              return cts.IsCancellationRequested
+                          })
+
+                  Expect.isTrue "window close should cancel the game loop" cancelled)
+
+              ]
+    )
