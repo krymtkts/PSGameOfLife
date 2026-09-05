@@ -148,7 +148,12 @@ module Main =
 
             Unsafe.CopyBlockUnaligned(NativePtr.toVoidPtr dstRemPtr, NativePtr.toVoidPtr ptr, uint32 rem.Length)
 
-type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSource) as __ =
+type MainWindow(
+    cellSize: int,
+    board: Board,
+    cts: Threading.CancellationTokenSource,
+    requestShutdown: unit -> unit
+) as __ =
     inherit Window()
     let isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
     let templates = Main.initCellTemplates cellSize
@@ -364,7 +369,8 @@ let inline game (screen: Screen) (board: Board) =
             | desktopLifetime -> desktopLifetime
 
     use cts = new Threading.CancellationTokenSource()
-    let mainWindow = new MainWindow(screen.CellSize, board, cts)
+    let requestShutdown () = desktopLifetime.Shutdown(0)
+    let mainWindow = new MainWindow(screen.CellSize, board, cts, requestShutdown)
     app.mainWindow <- mainWindow
     mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
 
