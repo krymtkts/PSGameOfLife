@@ -166,6 +166,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         use fb = wb.Lock()
         Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
+    // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
+    // fsharpanalyzer: ignore-line-next IONIDE-002
     let prepareBoard (cells: Cell[,]) =
         use tempPtr = fixed &tempBuffer.[0]
 
@@ -286,18 +288,18 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
 
     override __.OnClosed(e: EventArgs) =
 #if DEBUG || SHOW_FPS
-        printfn "Start Closed PSGameOfLife."
+        stdout.WriteLine "Start Closed PSGameOfLife."
 #endif
         cts.Cancel()
         base.OnClosed(e)
 #if DEBUG || SHOW_FPS
-        printfn "Closed PSGameOfLife."
+        stdout.WriteLine "Closed PSGameOfLife."
 #endif
 
     override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
         if e.Key = Avalonia.Input.Key.Q then
 #if DEBUG || SHOW_FPS
-            printfn "Quitting PSGameOfLife."
+            stdout.WriteLine "Quitting PSGameOfLife."
 #endif
             e.Handled <- true
             Dispatcher.UIThread.Post(System.Action(requestShutdown), DispatcherPriority.Input)

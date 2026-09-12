@@ -23,13 +23,18 @@ type Board =
       mutable Lives: int
       mutable Generation: int
       Interval: int<ms>
+      // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
+      // fsharpanalyzer: ignore-line-next IONIDE-002
       mutable Cells: Cell[,] }
 
 let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
 
+// NOTE: A bool-returning partial active pattern cannot use [<return: Struct>].
+// fsharpanalyzer: ignore-line-next IONIDE-009
 let (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
+// fsharpanalyzer: ignore-line-next IONIDE-009
 let (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
 
 let nextCellState (cell: Cell) (lives: int) =
@@ -38,6 +43,7 @@ let nextCellState (cell: Cell) (lives: int) =
     | Birth -> Live
     | _ -> Dead
 
+// fsharpanalyzer: ignore-line-next IONIDE-002
 let countLiveCells (cells: Cell[,]) =
     let mutable alive = 0
 
@@ -48,6 +54,7 @@ let countLiveCells (cells: Cell[,]) =
 
     alive
 
+// fsharpanalyzer: ignore-line-next IONIDE-002
 let nextGeneration (partitioner: OrderablePartitioner<int * int>) (buffer: outref<Cell[,]>) (board: outref<Board>) =
     let columns = int board.Column
     let rows = int board.Row
