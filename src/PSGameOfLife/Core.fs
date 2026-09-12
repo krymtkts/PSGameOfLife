@@ -29,7 +29,10 @@ let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
     |> Array.filter (fun (dx, dy) -> dx <> 0 || dy <> 0)
 
+// NOTE: A bool-returning partial active pattern cannot use [<return: Struct>].
+// fsharpanalyzer: ignore-line-next IONIDE-009
 let (|Survive|_|) (cell: Cell, lives) = cell.IsLive && (lives = 2 || lives = 3)
+// fsharpanalyzer: ignore-line-next IONIDE-009
 let (|Birth|_|) (cell: Cell, lives) = cell.IsDead && lives = 3
 
 let nextCellState (cell: Cell) (lives: int) =
