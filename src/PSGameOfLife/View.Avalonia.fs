@@ -23,7 +23,7 @@ open PSGameOfLife.Diagnostics
 
 module AssemblyHelper =
     let getModuleDir () =
-        System.IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
+        IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
         |> function
             | null -> failwith "Could not determine module directory."
             | dir -> dir
@@ -47,7 +47,7 @@ module AssemblyHelper =
                     else
                         $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.{extension}"
 
-                System.IO.Path.Combine(moduleDir, libPath)
+                IO.Path.Combine(moduleDir, libPath)
 
             if libPath |> IO.File.Exists then
 
@@ -296,8 +296,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         stdout.WriteLine "Closed PSGameOfLife."
 #endif
 
-    override __.OnKeyDown(e: Avalonia.Input.KeyEventArgs) =
-        if e.Key = Avalonia.Input.Key.Q then
+    override __.OnKeyDown(e: Input.KeyEventArgs) =
+        if e.Key = Input.Key.Q then
 #if DEBUG || SHOW_FPS
             stdout.WriteLine "Quitting PSGameOfLife."
 #endif

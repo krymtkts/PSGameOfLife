@@ -1,11 +1,9 @@
 module PSGameOfLife.Algorithm
 
-open System
-
 let defaultFateRoll = 0.3
 
 let random (fateRoll: float) =
-    let random = Random()
+    let random = System.Random()
 
     fun _ _ ->
         if random.NextDouble() <= fateRoll then

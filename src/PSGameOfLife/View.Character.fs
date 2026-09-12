@@ -1,7 +1,6 @@
 module PSGameOfLife.View.Character
 
 open System
-open System.IO
 
 open PSGameOfLife.Core
 #if DEBUG || SHOW_FPS
@@ -30,7 +29,7 @@ type Screen() =
     let originalOut = Console.Out
 
     let writer =
-        let sw = new StreamWriter(Console.OpenStandardOutput(), Console.OutputEncoding)
+        let sw = new IO.StreamWriter(Console.OpenStandardOutput(), Console.OutputEncoding)
 
         sw.AutoFlush <- false
         sw |> Console.SetOut
