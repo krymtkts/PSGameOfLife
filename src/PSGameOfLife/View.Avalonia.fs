@@ -166,6 +166,8 @@ type MainWindow(cellSize: int, board: Board, cts: Threading.CancellationTokenSou
         use fb = wb.Lock()
         Runtime.InteropServices.Marshal.Copy(tempBuffer, 0, fb.Address, bufferSize)
 
+    // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
+    // fsharpanalyzer: ignore-line-next IONIDE-002
     let prepareBoard (cells: Cell[,]) =
         use tempPtr = fixed &tempBuffer.[0]
 

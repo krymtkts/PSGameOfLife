@@ -23,6 +23,8 @@ type Board =
       mutable Lives: int
       mutable Generation: int
       Interval: int<ms>
+      // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
+      // fsharpanalyzer: ignore-line-next IONIDE-002
       mutable Cells: Cell[,] }
 
 let neighborOffsets =
@@ -41,6 +43,7 @@ let nextCellState (cell: Cell) (lives: int) =
     | Birth -> Live
     | _ -> Dead
 
+// fsharpanalyzer: ignore-line-next IONIDE-002
 let countLiveCells (cells: Cell[,]) =
     let mutable alive = 0
 
@@ -51,6 +54,7 @@ let countLiveCells (cells: Cell[,]) =
 
     alive
 
+// fsharpanalyzer: ignore-line-next IONIDE-002
 let nextGeneration (partitioner: OrderablePartitioner<int * int>) (buffer: outref<Cell[,]>) (board: outref<Board>) =
     let columns = int board.Column
     let rows = int board.Row
