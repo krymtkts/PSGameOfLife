@@ -18,14 +18,16 @@ type row
 
 [<Struct>]
 type Board =
-    { Column: int<col>
-      Row: int<row>
-      mutable Lives: int
-      mutable Generation: int
-      Interval: int<ms>
-      // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
-      // fsharpanalyzer: ignore-line-next IONIDE-002
-      mutable Cells: Cell[,] }
+    {
+        Column: int<col>
+        Row: int<row>
+        mutable Lives: int
+        mutable Generation: int
+        Interval: int<ms>
+        // NOTE: Cell[,] is intentionally retained for the board's rectangular two-dimensional shape.
+        // fsharpanalyzer: ignore-line-next IONIDE-002
+        mutable Cells: Cell[,]
+    }
 
 let neighborOffsets =
     Array.allPairs [| -1; 0; 1 |] [| -1; 0; 1 |]
@@ -86,9 +88,11 @@ let nextGeneration (partitioner: OrderablePartitioner<int * int>) (buffer: outre
 let createBoard initializer (col: int<col>) (row: int<row>) (interval: int<ms>) =
     let cells = Array2D.init (int row) (int col) initializer
 
-    { Column = col
-      Row = row
-      Lives = cells |> countLiveCells
-      Generation = 0
-      Interval = interval
-      Cells = cells }
+    {
+        Column = col
+        Row = row
+        Lives = cells |> countLiveCells
+        Generation = 0
+        Interval = interval
+        Cells = cells
+    }

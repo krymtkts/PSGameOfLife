@@ -84,10 +84,12 @@ module AssemblyHelper =
         let cache = new ConcurrentDictionary<string, nativeint>()
         let resolver = resolver cache moduleDir extension
 
-        [| typeof<SkiaSharp.SKImageInfo>.Assembly
-           typeof<HarfBuzzSharp.Buffer>.Assembly
-           typeof<AppBuilder>.Assembly
-           typeof<Win32.AngleOptions>.Assembly |]
+        [|
+            typeof<SkiaSharp.SKImageInfo>.Assembly
+            typeof<HarfBuzzSharp.Buffer>.Assembly
+            typeof<AppBuilder>.Assembly
+            typeof<Win32.AngleOptions>.Assembly
+        |]
         |> Array.iter (fun assembly -> NativeLibrary.SetDllImportResolver(assembly, resolver))
 
 module Main =
@@ -117,10 +119,12 @@ module Main =
 
     [<Struct>]
     type Templates =
-        { LiveRemBytes: byte array
-          LiveVectors: Vector<byte> array
-          DeadRemBytes: byte array
-          DeadVectors: Vector<byte> array }
+        {
+            LiveRemBytes: byte array
+            LiveVectors: Vector<byte> array
+            DeadRemBytes: byte array
+            DeadVectors: Vector<byte> array
+        }
 
     let initCellTemplates cellSize : Templates =
         let liveRemBytes, liveVectors = createCellTemplate cellSize (0uy, 0uy, 0uy, 255uy)
@@ -128,10 +132,12 @@ module Main =
         let deadRemBytes, deadVectors =
             createCellTemplate cellSize (255uy, 255uy, 255uy, 255uy)
 
-        { LiveRemBytes = liveRemBytes
-          LiveVectors = liveVectors
-          DeadRemBytes = deadRemBytes
-          DeadVectors = deadVectors }
+        {
+            LiveRemBytes = liveRemBytes
+            LiveVectors = liveVectors
+            DeadRemBytes = deadRemBytes
+            DeadVectors = deadVectors
+        }
 
     let writeTemplateSIMD (dst: nativeptr<byte>) (vectors: Vector<byte> array) (rem: byte array) =
         let baseAddr = NativePtr.toNativeInt dst
