@@ -24,12 +24,14 @@ type HeadlessAppBuilder =
         AppBuilder.Configure<App>().UseSkia().UseHeadless(options)
 
 let private headlessBoard =
-    { Column = 1<col>
-      Row = 1<row>
-      Lives = 0
-      Generation = 0
-      Interval = 1<ms>
-      Cells = array2D [| [| Dead |] |] }
+    {
+        Column = 1<col>
+        Row = 1<row>
+        Lives = 0
+        Generation = 0
+        Interval = 1<ms>
+        Cells = array2D [| [| Dead |] |]
+    }
 
 let private startHeadlessSession () =
     HeadlessUnitTestSession.StartNew(typeof<HeadlessAppBuilder>, AvaloniaTestIsolationLevel.PerTest)
@@ -55,169 +57,184 @@ let testsCore =
         "Core"
         [
 
-          test "When a dead cell without neighbors" {
-              let origin =
-                  { Column = 1<col>
-                    Row = 1<row>
-                    Lives = 0
-                    Generation = 0
-                    Interval = 0<ms>
-                    Cells = array2D [| [| Dead |] |] }
+            test "When a dead cell without neighbors" {
+                let origin =
+                    {
+                        Column = 1<col>
+                        Row = 1<row>
+                        Lives = 0
+                        Generation = 0
+                        Interval = 0<ms>
+                        Cells = array2D [| [| Dead |] |]
+                    }
 
-              let partitioner = Partitioner.Create(0, int origin.Row)
-              let mutable board = origin
-              let mutable buffer = Array2D.copy board.Cells
+                let partitioner = Partitioner.Create(0, int origin.Row)
+                let mutable board = origin
+                let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration partitioner &buffer &board
+                nextGeneration partitioner &buffer &board
 
-              board
-              |> Expect.equal
-                  "should stay dead"
-                  { origin with
-                      Generation = 1
-                      Cells = array2D [| [| Dead |] |] }
-          }
+                board
+                |> Expect.equal
+                    "should stay dead"
+                    { origin with
+                        Generation = 1
+                        Cells = array2D [| [| Dead |] |]
+                    }
+            }
 
-          test "When a live cell without neighbors" {
-              let origin =
-                  { Column = 1<col>
-                    Row = 1<row>
-                    Lives = 1
-                    Generation = 0
-                    Interval = 0<ms>
-                    Cells = array2D [| [| Live |] |] }
+            test "When a live cell without neighbors" {
+                let origin =
+                    {
+                        Column = 1<col>
+                        Row = 1<row>
+                        Lives = 1
+                        Generation = 0
+                        Interval = 0<ms>
+                        Cells = array2D [| [| Live |] |]
+                    }
 
-              let partitioner = Partitioner.Create(0, int origin.Row)
-              let mutable board = origin
-              let mutable buffer = Array2D.copy board.Cells
+                let partitioner = Partitioner.Create(0, int origin.Row)
+                let mutable board = origin
+                let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration partitioner &buffer &board
+                nextGeneration partitioner &buffer &board
 
-              board
-              |> Expect.equal
-                  "should die"
-                  { board with
-                      Lives = 0
-                      Generation = 1
-                      Cells = array2D [| [| Dead |] |] }
-          }
+                board
+                |> Expect.equal
+                    "should die"
+                    { board with
+                        Lives = 0
+                        Generation = 1
+                        Cells = array2D [| [| Dead |] |]
+                    }
+            }
 
-          test "When 3 live neighbors in a 2x2 board" {
-              let origin =
-                  { Column = 2<col>
-                    Row = 2<row>
-                    Lives = 3
-                    Generation = 0
-                    Interval = 0<ms>
-                    Cells =
-                      array2D
-                          [|
+            test "When 3 live neighbors in a 2x2 board" {
+                let origin =
+                    {
+                        Column = 2<col>
+                        Row = 2<row>
+                        Lives = 3
+                        Generation = 0
+                        Interval = 0<ms>
+                        Cells =
+                            array2D
+                                [|
 
-                             [| Dead; Live |]
-                             [| Live; Live |]
+                                    [| Dead; Live |]
+                                    [| Live; Live |]
 
-                             |] }
+                                |]
+                    }
 
-              let partitioner = Partitioner.Create(0, int origin.Row)
-              let mutable board = origin
-              let mutable buffer = Array2D.copy board.Cells
+                let partitioner = Partitioner.Create(0, int origin.Row)
+                let mutable board = origin
+                let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration partitioner &buffer &board
+                nextGeneration partitioner &buffer &board
 
-              board
-              |> Expect.equal
-                  "should become Block"
-                  { board with
-                      Lives = 4
-                      Generation = 1
-                      Cells =
-                          array2D
-                              [|
+                board
+                |> Expect.equal
+                    "should become Block"
+                    { board with
+                        Lives = 4
+                        Generation = 1
+                        Cells =
+                            array2D
+                                [|
 
-                                 [| Live; Live |]
-                                 [| Live; Live |]
+                                    [| Live; Live |]
+                                    [| Live; Live |]
 
-                                 |] }
-          }
+                                |]
+                    }
+            }
 
-          test "When Block" {
-              let origin =
-                  { Column = 2<col>
-                    Row = 2<row>
-                    Lives = 4
-                    Generation = 0
-                    Interval = 0<ms>
-                    Cells =
-                      array2D
-                          [|
+            test "When Block" {
+                let origin =
+                    {
+                        Column = 2<col>
+                        Row = 2<row>
+                        Lives = 4
+                        Generation = 0
+                        Interval = 0<ms>
+                        Cells =
+                            array2D
+                                [|
 
-                             [| Live; Live |]
-                             [| Live; Live |]
+                                    [| Live; Live |]
+                                    [| Live; Live |]
 
-                             |] }
+                                |]
+                    }
 
-              let partitioner = Partitioner.Create(0, int origin.Row)
-              let mutable board = origin
-              let mutable buffer = Array2D.copy board.Cells
+                let partitioner = Partitioner.Create(0, int origin.Row)
+                let mutable board = origin
+                let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration partitioner &buffer &board
+                nextGeneration partitioner &buffer &board
 
-              board
-              |> Expect.equal
-                  "should stay alive"
-                  { board with
-                      Generation = 1
-                      Cells =
-                          array2D
-                              [|
+                board
+                |> Expect.equal
+                    "should stay alive"
+                    { board with
+                        Generation = 1
+                        Cells =
+                            array2D
+                                [|
 
-                                 [| Live; Live |]
-                                 [| Live; Live |]
+                                    [| Live; Live |]
+                                    [| Live; Live |]
 
-                                 |] }
-          }
+                                |]
+                    }
+            }
 
 
-          test "when Blinker is vertical" {
-              let origin =
-                  { Column = 3<col>
-                    Row = 3<row>
-                    Lives = 3
-                    Generation = 0
-                    Interval = 0<ms>
-                    Cells =
-                      array2D
-                          [|
+            test "when Blinker is vertical" {
+                let origin =
+                    {
+                        Column = 3<col>
+                        Row = 3<row>
+                        Lives = 3
+                        Generation = 0
+                        Interval = 0<ms>
+                        Cells =
+                            array2D
+                                [|
 
-                             [| Dead; Live; Dead |]
-                             [| Dead; Live; Dead |]
-                             [| Dead; Live; Dead |]
+                                    [| Dead; Live; Dead |]
+                                    [| Dead; Live; Dead |]
+                                    [| Dead; Live; Dead |]
 
-                             |] }
+                                |]
+                    }
 
-              let partitioner = Partitioner.Create(0, int origin.Row)
-              let mutable board = origin
-              let mutable buffer = Array2D.copy board.Cells
+                let partitioner = Partitioner.Create(0, int origin.Row)
+                let mutable board = origin
+                let mutable buffer = Array2D.copy board.Cells
 
-              nextGeneration partitioner &buffer &board
+                nextGeneration partitioner &buffer &board
 
-              board
-              |> Expect.equal
-                  "should become a horizontal line"
-                  { board with
-                      Generation = 1
-                      Cells =
-                          array2D
-                              [|
+                board
+                |> Expect.equal
+                    "should become a horizontal line"
+                    { board with
+                        Generation = 1
+                        Cells =
+                            array2D
+                                [|
 
-                                 [| Dead; Dead; Dead |]
-                                 [| Live; Live; Live |]
-                                 [| Dead; Dead; Dead |]
+                                    [| Dead; Dead; Dead |]
+                                    [| Live; Live; Live |]
+                                    [| Dead; Dead; Dead |]
 
-                                 |] }
-          }
+                                |]
+                    }
+            }
 
-          ]
+        ]
 
 [<Tests>]
 let testsAvalonia =
@@ -226,105 +243,105 @@ let testsAvalonia =
             "Avalonia"
             [
 
-              headlessTest "window close raises Closed and cancels the token" (fun session ->
-                  let closed, cancelled =
-                      dispatch session (fun () ->
-                          let mutable closed = false
-                          use cts = new CancellationTokenSource()
-                          let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
+                headlessTest "window close raises Closed and cancels the token" (fun session ->
+                    let closed, cancelled =
+                        dispatch session (fun () ->
+                            let mutable closed = false
+                            use cts = new CancellationTokenSource()
+                            let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
 
-                          window.Closed.Add(fun _ -> closed <- true)
-                          window.Show()
-                          window.Close()
+                            window.Closed.Add(fun _ -> closed <- true)
+                            window.Show()
+                            window.Close()
 
-                          closed, cts.IsCancellationRequested)
+                            closed, cts.IsCancellationRequested)
 
-                  Expect.isTrue "window close should raise Closed" closed
-                  Expect.isTrue "window close should cancel the token" cancelled)
+                    Expect.isTrue "window close should raise Closed" closed
+                    Expect.isTrue "window close should cancel the token" cancelled)
 
-              headlessTest "Q requests shutdown once and handles the key" (fun session ->
-                  let closedBeforeJobs, requests, handled =
-                      dispatch session (fun () ->
-                          let mutable requests = 0
-                          let mutable closed = false
-                          let mutable handled = false
-                          use cts = new CancellationTokenSource()
+                headlessTest "Q requests shutdown once and handles the key" (fun session ->
+                    let closedBeforeJobs, requests, handled =
+                        dispatch session (fun () ->
+                            let mutable requests = 0
+                            let mutable closed = false
+                            let mutable handled = false
+                            use cts = new CancellationTokenSource()
 
-                          let window =
-                              new MainWindow(1, headlessBoard, cts, fun () -> requests <- requests + 1)
+                            let window =
+                                new MainWindow(1, headlessBoard, cts, fun () -> requests <- requests + 1)
 
-                          window.Closed.Add(fun _ -> closed <- true)
+                            window.Closed.Add(fun _ -> closed <- true)
 
-                          window.AddHandler(
-                              InputElement.KeyDownEvent,
-                              EventHandler<KeyEventArgs>(fun _ e -> handled <- e.Handled),
-                              RoutingStrategies.Bubble,
-                              true
-                          )
+                            window.AddHandler(
+                                InputElement.KeyDownEvent,
+                                EventHandler<KeyEventArgs>(fun _ e -> handled <- e.Handled),
+                                RoutingStrategies.Bubble,
+                                true
+                            )
 
-                          window.Show()
-                          window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
-                          let closedBeforeJobs = closed
-                          runPendingJobs ()
-                          window.Close()
-                          closedBeforeJobs, requests, handled)
+                            window.Show()
+                            window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
+                            let closedBeforeJobs = closed
+                            runPendingJobs ()
+                            window.Close()
+                            closedBeforeJobs, requests, handled)
 
-                  Expect.isFalse "Q should not close the window during key handling" closedBeforeJobs
-                  Expect.equal "Q should request shutdown once" 1 requests
-                  Expect.isTrue "Q should be handled" handled)
+                    Expect.isFalse "Q should not close the window during key handling" closedBeforeJobs
+                    Expect.equal "Q should request shutdown once" 1 requests
+                    Expect.isTrue "Q should be handled" handled)
 
-              headlessTest "Q shutdown callback can close the window" (fun session ->
-                  let requests, closed, cancelled =
-                      dispatch session (fun () ->
-                          let mutable requests = 0
-                          let mutable closed = false
-                          let mutable closeWindow = fun () -> ()
-                          use cts = new CancellationTokenSource()
+                headlessTest "Q shutdown callback can close the window" (fun session ->
+                    let requests, closed, cancelled =
+                        dispatch session (fun () ->
+                            let mutable requests = 0
+                            let mutable closed = false
+                            let mutable closeWindow = fun () -> ()
+                            use cts = new CancellationTokenSource()
 
-                          let window =
-                              new MainWindow(
-                                  1,
-                                  headlessBoard,
-                                  cts,
-                                  fun () ->
-                                      requests <- requests + 1
-                                      closeWindow ()
-                              )
+                            let window =
+                                new MainWindow(
+                                    1,
+                                    headlessBoard,
+                                    cts,
+                                    fun () ->
+                                        requests <- requests + 1
+                                        closeWindow ()
+                                )
 
-                          closeWindow <- window.Close
-                          window.Closed.Add(fun _ -> closed <- true)
-                          window.Show()
-                          window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
-                          runPendingJobs ()
+                            closeWindow <- window.Close
+                            window.Closed.Add(fun _ -> closed <- true)
+                            window.Show()
+                            window.KeyPressQwerty(PhysicalKey.Q, RawInputModifiers.None)
+                            runPendingJobs ()
 
-                          let closedByQ = closed
+                            let closedByQ = closed
 
-                          if not closed then
-                              window.Close()
+                            if not closed then
+                                window.Close()
 
-                          requests, closedByQ, cts.IsCancellationRequested)
+                            requests, closedByQ, cts.IsCancellationRequested)
 
-                  Expect.equal "Q should invoke the shutdown callback once" 1 requests
-                  Expect.isTrue "Q shutdown should close the window" closed
-                  Expect.isTrue "Q shutdown should cancel the token" cancelled)
+                    Expect.equal "Q should invoke the shutdown callback once" 1 requests
+                    Expect.isTrue "Q shutdown should close the window" closed
+                    Expect.isTrue "Q shutdown should cancel the token" cancelled)
 
-              headlessTest "game loop task completes after window close" (fun session ->
-                  let cancelled =
-                      dispatchAsync session (fun () ->
-                          task {
-                              use cts = new CancellationTokenSource()
-                              let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
-                              let keepAlive = new Avalonia.Controls.Window()
-                              window.Show()
-                              keepAlive.Show()
-                              let loopTask: Task = window.StartLoop()
-                              window.Close()
-                              do! loopTask
-                              keepAlive.Close()
-                              return cts.IsCancellationRequested
-                          })
+                headlessTest "game loop task completes after window close" (fun session ->
+                    let cancelled =
+                        dispatchAsync session (fun () ->
+                            task {
+                                use cts = new CancellationTokenSource()
+                                let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
+                                let keepAlive = new Avalonia.Controls.Window()
+                                window.Show()
+                                keepAlive.Show()
+                                let loopTask: Task = window.StartLoop()
+                                window.Close()
+                                do! loopTask
+                                keepAlive.Close()
+                                return cts.IsCancellationRequested
+                            })
 
-                  Expect.isTrue "window close should cancel the game loop" cancelled)
+                    Expect.isTrue "window close should cancel the game loop" cancelled)
 
-              ]
+            ]
     )
