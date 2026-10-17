@@ -32,10 +32,11 @@ updates:
       dotnet-tools:
         patterns:
           - "fantomas"
+          - "dotnet-reportgenerator-globaltool"
+      fsharp-analyzers:
+        patterns:
           - "fsharp-analyzers"
           - "Ionide.Analyzers"
-          - "coverlet.console"
-          - "dotnet-reportgenerator-globaltool"
       pwsh-std:
         patterns:
           - "PowerShellStandard.Library"
@@ -44,17 +45,22 @@ updates:
       avalonia:
         patterns:
           - "Avalonia.*"
+        exclude-patterns:
+          - "Avalonia.Headless"
       test-libs:
         patterns:
           - "Expecto"
           - "YoloDev.Expecto.TestSdk"
+          - "coverlet.MTP"
+          - "Microsoft.Testing.Extensions.*"
+          - "Avalonia.Headless"
     ignore:
-      - dependency-name: "Microsoft.Testing.Extensions.HangDump"
-        update-types:
-          - "version-update:semver-major"
       - dependency-name: "PowerShellStandard.Library"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
+      - dependency-name: "FSharp.Core"
+        update-types:
+          - "version-update:semver-major"
     assignees:
       - "krymtkts"
