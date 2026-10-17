@@ -32,10 +32,11 @@ updates:
       dotnet-tools:
         patterns:
           - "fantomas"
+          - "dotnet-reportgenerator-globaltool"
+      fsharp-analyzers:
+        patterns:
           - "fsharp-analyzers"
           - "Ionide.Analyzers"
-          - "coverlet.console"
-          - "dotnet-reportgenerator-globaltool"
       pwsh-std:
         patterns:
           - "PowerShellStandard.Library"
