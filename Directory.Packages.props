@@ -11,7 +11,7 @@
     <!-- NOTE: Avalonia dependencies. -->
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />
-    <PackageVersion Include="Avalonia.Headless" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.6" />
     <!-- NOTE: to address Avalonia DBus issue -->
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.95.2" SecurityPin="true" />
     <!-- NOTE: Test dependencies. -->
@@ -19,8 +19,8 @@
     <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.16.1" />
     <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
     <!-- NOTE: Use HangDump on 2.x to match YoloDev.Expecto.TestSdk's MTP v2 line. -->
-    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.2" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.GitHubActionsReport" Version="2.5.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.3" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.GitHubActionsReport" Version="2.5.3" />
     <!-- NOTE: Analyzer configurations. -->
     <PackageVersion Include="Ionide.Analyzers" Version="0.20.0" />
   </ItemGroup>
