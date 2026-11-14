@@ -6,6 +6,10 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Changed
+
+- Update bundled `FSharp.Core` from 10.1.404 to 11.0.101 for F# 11 support.
+
 ## [0.0.3] - 2026-07-11
 
 ### Changed
