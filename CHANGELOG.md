@@ -6,9 +6,19 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-11-15
+
 ### Changed
 
-- Update bundled `FSharp.Core` from 10.1.404 to 11.0.101 for F# 11 support.
+- Update bundled `FSharp.Core` from 10.1.301 to 11.0.101 for F# 11 support.
+
+### Fixed
+
+- Fix GUI shutdown with the `Q` key on Linux and ensure the game loop completes when the window closes.
+
+### Notes
+
+- Restart PowerShell after updating. Modules that already loaded FSharp.Core 10 can cause a conflict in the same session.
 
 ## [0.0.3] - 2026-07-11
 
@@ -52,7 +62,8 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
-[Unreleased]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/krymtkts/PSGameOfLife/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/krymtkts/PSGameOfLife/releases/tag/v0.0.1
