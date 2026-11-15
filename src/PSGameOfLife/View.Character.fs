@@ -148,7 +148,7 @@ let runLoop (render: Board -> unit) (stop: unit -> bool) (board: Board) =
 
         while not <| stop () do
             render b
-            do! Task.Delay(int board.Interval)
+            do! Task.Delay(int board.Interval) |> _.ConfigureAwait(false)
             nextGeneration partitioner &buffer &b
     }
     |> Task.WaitAll

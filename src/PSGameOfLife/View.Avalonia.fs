@@ -328,7 +328,12 @@ type App() =
 
 
 let withHostContext (action: unit -> 'T) =
-    action ()
+    let context = Threading.SynchronizationContext.Current
+
+    try
+        action ()
+    finally
+        Threading.SynchronizationContext.SetSynchronizationContext(context)
 
 type Screen(cellSize: int, col: int, row: int) =
     static let app =
@@ -375,6 +380,8 @@ let inline game (screen: Screen) (board: Board) =
         |> function
             | null -> failwith "Application lifetime is not set."
             | desktopLifetime -> desktopLifetime
+
+    AvaloniaSynchronizationContext.InstallIfNeeded()
 
     use cts = new Threading.CancellationTokenSource()
     let mutable currentWindow: MainWindow | null = null
