@@ -140,16 +140,19 @@ let inline stopRequested<'Screen
 [<Literal>]
 let defaultInterval = 100<ms>
 
-let inline game (screen: ^Screen) (board: Board) =
+let runLoop (render: Board -> unit) (stop: unit -> bool) (board: Board) =
     task {
         let mutable b = board
         let partitioner = Partitioner.Create(0, int board.Row)
         let mutable buffer = Array2D.copy b.Cells
-        let r = new Renderer(screen)
 
-        while not <| stopRequested screen do
-            r.Render b
+        while not <| stop () do
+            render b
             do! Task.Delay(int board.Interval)
             nextGeneration partitioner &buffer &b
     }
     |> Task.WaitAll
+
+let inline game (screen: ^Screen) (board: Board) =
+    let renderer = new Renderer(screen)
+    runLoop renderer.Render (fun () -> stopRequested screen) board

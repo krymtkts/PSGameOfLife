@@ -327,6 +327,9 @@ type App() =
         | _ -> ()
 
 
+let withHostContext (action: unit -> 'T) =
+    action ()
+
 type Screen(cellSize: int, col: int, row: int) =
     static let app =
         lazy
