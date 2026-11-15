@@ -237,11 +237,126 @@ let testsCore =
         ]
 
 [<Tests>]
+let testsContext =
+    testSequenced (
+        testList
+            "Host context"
+            [
+                testCase "GUI scope restores null and existing contexts on success and failure" (fun () ->
+                    let original = SynchronizationContext.Current
+
+                    try
+                        for context in ([ null; SynchronizationContext() ]: (SynchronizationContext | null) list) do
+                            for fails in [ false; true ] do
+                                SynchronizationContext.SetSynchronizationContext(context)
+                                let error = InvalidOperationException("probe")
+
+                                try
+                                    withHostContext (fun () ->
+                                        SynchronizationContext.SetSynchronizationContext(SynchronizationContext())
+
+                                        if fails then
+                                            raise error)
+
+                                    if fails then
+                                        failtest "expected the original exception"
+                                with :? InvalidOperationException as actual ->
+                                    Expect.isTrue
+                                        "exception identity is preserved"
+                                        (obj.ReferenceEquals(error, actual))
+
+                                Expect.isTrue
+                                    "host context is restored"
+                                    (obj.ReferenceEquals(context, SynchronizationContext.Current))
+                    finally
+                        SynchronizationContext.SetSynchronizationContext(original))
+
+                testCase "console loop advances without pumping the caller context" (fun () ->
+                    use posted = new ManualResetEventSlim(false)
+                    use finished = new ManualResetEventSlim(false)
+                    let queue = ConcurrentQueue<SendOrPostCallback * (obj | null)>()
+
+                    let context =
+                        { new SynchronizationContext() with
+                            override _.Post(callback, state) =
+                                queue.Enqueue((callback, state))
+                                posted.Set()
+                        }
+
+                    let mutable frames = 0
+                    let mutable generation = -1
+                    let mutable failure: exn option = None
+
+                    let worker =
+                        Thread(
+                            ThreadStart(fun () ->
+                                SynchronizationContext.SetSynchronizationContext(context)
+
+                                try
+                                    PSGameOfLife.View.Character.runLoop
+                                        (fun board ->
+                                            frames <- frames + 1
+                                            generation <- board.Generation)
+                                        (fun () -> frames >= 2)
+                                        headlessBoard
+                                with ex ->
+                                    failure <- Some ex
+
+                                finished.Set())
+                        )
+
+                    worker.IsBackground <- true
+                    worker.Start()
+                    let completed = finished.Wait(TimeSpan.FromSeconds(2.0))
+
+                    if not completed then
+                        let deadline = DateTime.UtcNow.AddSeconds(2.0)
+
+                        while not finished.IsSet && DateTime.UtcNow < deadline do
+                            let mutable item = Unchecked.defaultof<SendOrPostCallback * (obj | null)>
+
+                            if queue.TryDequeue(&item) then
+                                let callback, state = item
+                                callback.Invoke(state)
+                            else
+                                posted.Wait(10) |> ignore
+                                posted.Reset()
+
+                    Expect.isTrue "worker is cleaned up" (worker.Join(1000))
+                    Expect.isTrue "loop finishes without a context pump" completed
+                    Expect.equal "two frames are rendered" 2 frames
+                    Expect.equal "generation advances" 1 generation
+                    Expect.equal "loop succeeds" None failure)
+            ]
+    )
+
+[<Tests>]
 let testsAvalonia =
     testSequenced (
         testList
             "Avalonia"
             [
+
+                headlessTest "GUI scope restores context after headless window close" (fun session ->
+                    dispatch session (fun () ->
+                        let original = SynchronizationContext.Current
+
+                        try
+                            SynchronizationContext.SetSynchronizationContext(null)
+
+                            withHostContext (fun () ->
+                                SynchronizationContext.SetSynchronizationContext(original)
+                                use cts = new CancellationTokenSource()
+                                let window = new MainWindow(1, headlessBoard, cts, fun () -> ())
+                                window.Show()
+                                window.Close()
+                                Expect.isTrue "close cancels the loop token" cts.IsCancellationRequested)
+
+                            Expect.isTrue
+                                "host context is null after GUI scope"
+                                (isNull SynchronizationContext.Current)
+                        finally
+                            SynchronizationContext.SetSynchronizationContext(original)))
 
                 headlessTest "window close raises Closed and cancels the token" (fun session ->
                     let closed, cancelled =
