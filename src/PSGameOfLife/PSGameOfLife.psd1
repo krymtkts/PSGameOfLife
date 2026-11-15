@@ -12,7 +12,7 @@
     RootModule = 'PSGameOfLife.dll'
 
     # Version number of this module.
-    ModuleVersion = '0.0.3'
+    ModuleVersion = '0.0.4'
 
     # Supported PSEditions
     CompatiblePSEditions = @(
@@ -115,6 +115,20 @@
             # ReleaseNotes of this module
 
             ReleaseNotes = @'
+## [0.0.4] - 2026-11-15
+
+### Changed
+
+- Update bundled `FSharp.Core` from 10.1.301 to 11.0.101 for F# 11 support.
+
+### Fixed
+
+- Fix GUI shutdown with the `Q` key on Linux and ensure the game loop completes when the window closes.
+
+### Notes
+
+- Restart PowerShell after updating. Modules that already loaded FSharp.Core 10 can cause a conflict in the same session.
+
 ## [0.0.3] - 2026-07-11
 
 ### Changed
@@ -140,20 +154,6 @@
 - Fix next generation calculation.
 - Improve GUI update cancellation and window responsiveness.
 - Disable the GUI `Q` keyboard shortcut on Linux to avoid leaving the window open after exit.
-
-## [0.0.1] - 2025-06-08
-
-### Added
-
-- Add the `Start-GameOfLife` cmdlet to run Conway's Game of Life in the console.
-- Add `-FateRoll` and `-IntervalMs` parameters to configure the simulation.
-- Add PowerShell help and readme documentation for installation and usage.
-
-### Notes
-
-- This is the initial release of `PSGameOfLife`.
-- Supported PowerShell versions are 7.4 and higher.
-- The module targets .NET 8.
 
 Full CHANGELOG: https://github.com/krymtkts/PSGameOfLife/blob/main/CHANGELOG.md
 '@
