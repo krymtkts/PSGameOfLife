@@ -6,6 +6,10 @@ This changelog uses the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix console mode hanging after GUI shutdown due to synchronization context capture.
+
 ## [0.0.4] - 2026-11-15
 
 ### Changed
