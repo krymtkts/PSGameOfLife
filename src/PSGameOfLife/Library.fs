@@ -65,6 +65,7 @@ type StartGameOfLifeCommand() =
                 let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
                 View.Character.game screen board
             | UIMode.Gui ->
-                use screen = new View.Avalonia.Screen(__.CellSize, __.Width, __.Height)
-                let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
-                View.Avalonia.game screen board
+                View.Avalonia.withHostContext (fun () ->
+                    use screen = new View.Avalonia.Screen(__.CellSize, __.Width, __.Height)
+                    let board = Core.createBoard initializer screen.Column screen.Row __.IntervalMs
+                    View.Avalonia.game screen board)
