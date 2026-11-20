@@ -22,6 +22,6 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.3" />
     <PackageVersion Include="Microsoft.Testing.Extensions.GitHubActionsReport" Version="2.5.3" />
     <!-- NOTE: Analyzer configurations. -->
-    <PackageVersion Include="Ionide.Analyzers" Version="0.20.0" />
+    <PackageVersion Include="Ionide.Analyzers" Version="0.22.0" />
   </ItemGroup>
 </Project>
