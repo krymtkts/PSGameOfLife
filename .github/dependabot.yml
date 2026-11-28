@@ -45,15 +45,12 @@ updates:
       avalonia:
         patterns:
           - "Avalonia.*"
-        exclude-patterns:
-          - "Avalonia.Headless"
       test-libs:
         patterns:
           - "Expecto"
           - "YoloDev.Expecto.TestSdk"
           - "coverlet.MTP"
           - "Microsoft.Testing.Extensions.*"
-          - "Avalonia.Headless"
     ignore:
       - dependency-name: "PowerShellStandard.Library"
         update-types:
